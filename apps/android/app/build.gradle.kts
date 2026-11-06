@@ -22,7 +22,7 @@ android {
         applicationId = "app.simvio.receptor"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = System.getenv("SIMVIO_VERSION_CODE")?.toInt() ?: 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

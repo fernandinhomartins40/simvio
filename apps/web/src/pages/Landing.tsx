@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/lib/session";
 
+// Publicado pelo workflow android-apk.yml.
+const APK_URL = "https://github.com/fernandinhomartins40/simvio/releases/download/receptor/simvio-receptor.apk";
+
 /** Planos de referência do PRD (§ planos). Sem cotas de mensagens: a cobrança é só a mensalidade. */
 export const PLANS = [
   { name: "Essencial", price: 79, apps: 1, devices: 1, text: "Para validar um produto." },
@@ -53,6 +56,7 @@ export default function Landing() {
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg"><Link to={cta.to}>{cta.label} <ArrowRight aria-hidden /></Link></Button>
               <Button asChild size="lg" variant="ghost"><a href="#como-funciona">Entenda em 3 passos</a></Button>
+              <Button asChild size="lg" variant="outline"><a href={APK_URL}><Smartphone aria-hidden /> Baixar app receptor (Android)</a></Button>
             </div>
             <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
               {["Sem instalação para seus usuários", "Integração por API", "Planos simples"].map((t) => (
@@ -170,6 +174,7 @@ export default function Landing() {
           <a href="#como-funciona" className="hover:underline">Como funciona</a>
           <a href="#planos" className="hover:underline">Planos</a>
           <Link to="/documentacao" className="hover:underline">Documentação</Link>
+          <a href={APK_URL} className="hover:underline">Baixar app Android</a>
           <Link to="/entrar" className="hover:underline">Entrar</Link>
         </nav>
       </footer>

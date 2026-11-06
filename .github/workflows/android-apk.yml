@@ -1,0 +1,56 @@
+name: APK do receptor Android
+
+# Roda em paralelo ao deploy, só quando o app muda. O APK assinado fica sempre no mesmo endereço
+# (release "receptor"), usado pelo link da página inicial. Nada disso toca a VPS.
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - "apps/android/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: simvio-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Testar e gerar APK assinado
+        env:
+          SIMVIO_KEYSTORE_BASE64: ${{ secrets.SIMVIO_KEYSTORE_BASE64 }}
+          SIMVIO_KEYSTORE_PASSWORD: ${{ secrets.SIMVIO_KEYSTORE_PASSWORD }}
+          SIMVIO_KEY_PASSWORD: ${{ secrets.SIMVIO_KEYSTORE_PASSWORD }}
+          SIMVIO_KEY_ALIAS: simvio
+          SIMVIO_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          export SIMVIO_KEYSTORE_FILE="$RUNNER_TEMP/simvio-release.jks"
+          printf '%s' "$SIMVIO_KEYSTORE_BASE64" | base64 -d > "$SIMVIO_KEYSTORE_FILE"
+          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk
+          cp app/build/outputs/apk/release/app-release.apk simvio-receptor.apk
+
+      - name: Publicar no endereço fixo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view receptor >/dev/null 2>&1 || gh release create receptor \
+            --title "App receptor Android" --notes "Versão mais recente do app receptor do Simvio." --latest=false
+          gh release upload receptor simvio-receptor.apk --clobber
