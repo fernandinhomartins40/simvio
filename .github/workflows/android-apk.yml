@@ -43,7 +43,8 @@ jobs:
           export SIMVIO_KEYSTORE_FILE="$RUNNER_TEMP/simvio-release.jks"
           printf '%s' "$SIMVIO_KEYSTORE_BASE64" | base64 -d > "$SIMVIO_KEYSTORE_FILE"
           ./gradlew --no-daemon testDebugUnitTest assembleRelease
-          "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk
+          tools=("$ANDROID_HOME"/build-tools/*)
+          "${tools[-1]}/apksigner" verify app/build/outputs/apk/release/app-release.apk
           cp app/build/outputs/apk/release/app-release.apk simvio-receptor.apk
 
       - name: Publicar no endereço fixo
