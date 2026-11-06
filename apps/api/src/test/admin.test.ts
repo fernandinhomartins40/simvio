@@ -195,4 +195,84 @@ describe("entregas por ambiente", () => {
     expect(live[0].environment).toBe("live");
     expect((await owner.req("GET", `/v1/orgs/${t.orgId}/deliveries?environment=outro`)).statusCode).toBe(400);
   });
+
+  it("login da administração recusa cliente com a mesma mensagem e sem sessão", async () => {
+    await createUser("comum@simvio.test", false);
+    await createUser("admin@simvio.test", true);
+    const cliente = await app.inject({ method: "POST", url: "/v1/admin/login", payload: { email: "comum@simvio.test", password: PASSWORD } });
+    const errada = await app.inject({ method: "POST", url: "/v1/admin/login", payload: { email: "admin@simvio.test", password: "senha-errada-123" } });
+    expect(cliente.statusCode).toBe(401);
+    expect(cliente.json().error.message ?? cliente.json()).toEqual(errada.json().error.message ?? errada.json());
+    expect(cliente.cookies.some((c) => c.name === "simvio_session")).toBe(false);
+    const ok = await app.inject({ method: "POST", url: "/v1/admin/login", payload: { email: "admin@simvio.test", password: PASSWORD } });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.cookies.some((c) => c.name === "simvio_session")).toBe(true);
+  });
+
+  it("novas rotas exigem superadmin com autenticador", async () => {
+    await createUser("comum@simvio.test", false);
+    const user = await signIn("comum@simvio.test");
+    await createUser("sem-mfa@simvio.test", true);
+    const noMfa = await signIn("sem-mfa@simvio.test");
+    for (const [method, url] of [["GET", "/v1/admin/overview"], ["GET", "/v1/admin/users"], ["POST", "/v1/admin/plans"], ["POST", "/v1/admin/users/x/send-reset"], ["POST", "/v1/admin/organizations/x/delete"]] as const) {
+      expect((await user.req(method, url, {})).statusCode).toBe(404);
+      expect((await noMfa.req(method, url, {})).statusCode).toBe(403);
+    }
+  });
+
+  it("visão geral soma receita só de assinaturas ativas e não suspensas", async () => {
+    const { admin } = await adminWithMfa();
+    const a = await createTenant("Paga");
+    const b = await createTenant("Suspensa");
+    const plan = await prisma.plan.upsert({ where: { code: "essencial" }, update: { priceCents: 7900 }, create: { code: "essencial", name: "Essencial", priceCents: 7900, maxLiveApplications: 1, maxDevices: 1 } });
+    await prisma.subscription.deleteMany({ where: { organizationId: { in: [a.orgId, b.orgId] } } });
+    await prisma.subscription.createMany({ data: [{ organizationId: a.orgId, planId: plan.id }, { organizationId: b.orgId, planId: plan.id }] });
+    await prisma.organization.update({ where: { id: b.orgId }, data: { suspendedAt: new Date() } });
+    const res = (await admin.req("GET", "/v1/admin/overview")).json();
+    expect(res.monthly_revenue_cents).toBe(7900);
+    expect(res.organizations).toMatchObject({ suspended: 1, paying: 1 });
+    const paying = (await admin.req("GET", "/v1/admin/organizations?status=paying")).json();
+    expect(paying.data.map((o: { name: string }) => o.name)).toEqual(["Paga"]);
+  });
+
+  it("excluir cliente exige o nome, remove contas órfãs e preserva quem tem outra organização", async () => {
+    const { admin } = await adminWithMfa();
+    const t = await createTenant("Loja Azul");
+    const other = await createTenant("Loja Verde");
+    const orphan = await createUser("orfao@simvio.test", false);
+    const shared = await createUser("dois@simvio.test", false);
+    await prisma.membership.createMany({ data: [
+      { userId: orphan.id, organizationId: t.orgId, role: "viewer" },
+      { userId: shared.id, organizationId: t.orgId, role: "viewer" },
+      { userId: shared.id, organizationId: other.orgId, role: "viewer" },
+    ] });
+    const url = `/v1/admin/organizations/${t.orgId}/delete`;
+    expect((await admin.req("POST", url, { confirm_name: "outro", reason: "pedido do cliente" })).statusCode).toBe(400);
+    expect(await prisma.organization.count({ where: { id: t.orgId } })).toBe(1);
+    expect((await admin.req("POST", url, { confirm_name: "Loja Azul", reason: "pedido do cliente" })).statusCode).toBe(200);
+    expect(await prisma.organization.count({ where: { id: t.orgId } })).toBe(0);
+    expect(await prisma.user.count({ where: { id: orphan.id } })).toBe(0);
+    expect(await prisma.user.count({ where: { id: shared.id } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: "admin.organization_deleted", targetId: t.orgId } })).toBe(1);
+  });
+
+  it("administra usuários e planos com auditoria", async () => {
+    const { admin } = await adminWithMfa();
+    const u = await prisma.user.create({ data: { email: "novo@simvio.test", name: "Novo", passwordHash: await hashPassword(PASSWORD) } });
+    expect((await admin.req("GET", "/v1/admin/users?q=novo@")).json().data[0]).toMatchObject({ email: "novo@simvio.test", email_verified: false });
+    expect((await admin.req("POST", `/v1/admin/users/${u.id}/confirm-email`, {})).statusCode).toBe(200);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: u.id } })).emailVerifiedAt).not.toBeNull();
+    expect((await admin.req("POST", `/v1/admin/users/${u.id}/apagar-tudo`, {})).statusCode).toBe(400);
+    const session = await signIn("novo@simvio.test");
+    expect((await admin.req("POST", `/v1/admin/users/${u.id}/end-sessions`, {})).statusCode).toBe(200);
+    expect((await session.req("GET", "/v1/auth/me")).statusCode).toBe(401);
+
+    await prisma.plan.deleteMany({ where: { code: "plano-x" } });
+    const plan = { name: "Teste", price_cents: 1000, max_live_applications: 1, max_devices: 1, active: true };
+    expect((await admin.req("POST", "/v1/admin/plans", { code: "plano-x", ...plan })).statusCode).toBe(200);
+    expect((await admin.req("POST", "/v1/admin/plans", { code: "plano-x", ...plan })).statusCode).toBe(409);
+    expect((await admin.req("PUT", "/v1/admin/plans/plano-x", { ...plan, price_cents: 2000 })).statusCode).toBe(200);
+    expect((await prisma.plan.findUniqueOrThrow({ where: { code: "plano-x" } })).priceCents).toBe(2000);
+    expect(await prisma.auditLog.count({ where: { action: { in: ["admin.plan_created", "admin.plan_changed", "admin.user_confirm_email"] } } })).toBe(3);
+  });
 });

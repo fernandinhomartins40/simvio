@@ -5,12 +5,13 @@ import { prisma } from "../db.js";
 import { audit } from "../lib/audit.js";
 import { decrypt, encrypt, randomToken, safeEqual, sha256 } from "../lib/crypto.js";
 import { ApiError, invalid, notFound } from "../lib/errors.js";
-import { noStore, parse } from "../lib/http.js";
+import { noStore, parse, redactUrl } from "../lib/http.js";
 import { generateTotpSecret, matchTotp, otpauthUri } from "../lib/totp.js";
-import { deviceHealth } from "../modules/devices/health.js";
+import { createSession, forgotPassword, login, normalizeEmail, resendVerification, revokeAllSessions } from "../modules/auth/service.js";
+import { deviceHealth, onlineSince } from "../modules/devices/health.js";
 import { revokeDevice } from "../modules/devices/service.js";
 import { getEntitlements } from "../modules/plans.js";
-import { limit, requireSession } from "./panelAuth.js";
+import { assertOrigin, limit, requireSession, setSessionCookie } from "./panelAuth.js";
 
 /** Verificação em dois fatores vale por 12 horas na mesma sessão. */
 const MFA_WINDOW_MS = 12 * 3600 * 1000;
@@ -61,6 +62,19 @@ async function acceptTotp(userId: string, secretEnc: string, lastStep: number | 
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("onSend", async (_req, reply) => noStore(reply));
+
+  // ------------------------------------------------------------------ login próprio
+
+  /** Separado do login de clientes: só superadmin recebe sessão por aqui. */
+  app.post("/v1/admin/login", { config: limit(10) }, async (req, reply) => {
+    assertOrigin(req);
+    const body = parse(z.object({ email: z.email().max(254), password: z.string().min(1).max(128) }), req.body);
+    const user = await login(body.email, body.password, { superAdminOnly: true });
+    const { token, session } = await createSession(user.id, req.headers["user-agent"]);
+    setSessionCookie(reply, token, session.expiresAt);
+    await audit({ actorType: "superadmin", actorId: user.id, action: "admin.login" });
+    return { status: "ok" };
+  });
 
   // ------------------------------------------------------------------ dois fatores
 
@@ -124,16 +138,59 @@ export async function adminRoutes(app: FastifyInstance) {
     return { status: "ok" };
   });
 
+  // ------------------------------------------------------------------ visão geral
+
+  app.get("/v1/admin/overview", async (req) => {
+    await adminContext(req);
+    const now = Date.now();
+    const days = (n: number) => new Date(now - n * 24 * 3600 * 1000);
+    const offline = { status: "active" as const, OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: onlineSince() } }] };
+    const [organizations, suspended, signups7d, users, unverified, paying, devices, devicesOffline, created30d, verified30d, failedWebhooks, recent, attention] = await Promise.all([
+      prisma.organization.count(),
+      prisma.organization.count({ where: { suspendedAt: { not: null } } }),
+      prisma.organization.count({ where: { createdAt: { gte: days(7) } } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { emailVerifiedAt: null } }),
+      prisma.subscription.findMany({ where: { status: "active", organization: { suspendedAt: null } }, select: { plan: { select: { priceCents: true } } } }),
+      prisma.device.count({ where: { status: "active" } }),
+      prisma.device.count({ where: offline }),
+      prisma.verification.count({ where: { createdAt: { gte: days(30) } } }),
+      prisma.verification.count({ where: { status: "verified", createdAt: { gte: days(30) } } }),
+      prisma.webhookDelivery.count({ where: { status: "failed", createdAt: { gte: days(30) } } }),
+      prisma.organization.findMany({ orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, createdAt: true } }),
+      prisma.device.findMany({ where: offline, orderBy: { lastSeenAt: { sort: "asc", nulls: "first" } }, take: 10, include: { organization: { select: { id: true, name: true } } } }),
+    ]);
+    return {
+      organizations: { total: organizations, suspended, paying: paying.length, signups_7d: signups7d },
+      monthly_revenue_cents: paying.reduce((sum, s) => sum + s.plan.priceCents, 0),
+      users: { total: users, unverified },
+      devices: { active: devices, offline: devicesOffline },
+      verifications_30d: { created: created30d, verified: verified30d },
+      failed_webhooks_30d: failedWebhooks,
+      recent_organizations: recent.map((o) => ({ id: o.id, name: o.name, created_at: o.createdAt.toISOString() })),
+      offline_devices: attention.map((d) => ({ id: d.id, name: d.name, last_seen_at: d.lastSeenAt?.toISOString() ?? null, organization: d.organization })),
+    };
+  });
+
   // ------------------------------------------------------------------ organizações
 
   app.get("/v1/admin/organizations", async (req) => {
     await adminContext(req);
-    const q = parse(z.object({ q: z.string().trim().max(120).optional(), cursor: z.string().max(40).optional() }), req.query);
+    const q = parse(
+      z.object({ q: z.string().trim().max(120).optional(), status: z.enum(["suspended", "paying", "sandbox"]).optional(), cursor: z.string().max(40).optional() }),
+      req.query,
+    );
     const term = q.q || undefined;
+    const statusFilter = {
+      suspended: { suspendedAt: { not: null } },
+      paying: { suspendedAt: null, subscription: { is: { status: "active" as const } } },
+      sandbox: { suspendedAt: null, subscription: { is: null } },
+    };
     const rows = await prisma.organization.findMany({
-      where: term
-        ? { OR: [{ name: { contains: term, mode: "insensitive" } }, { id: term }, { memberships: { some: { user: { email: { contains: term.toLowerCase() } } } } }] }
-        : undefined,
+      where: {
+        ...(term ? { OR: [{ name: { contains: term, mode: "insensitive" as const } }, { id: term }, { memberships: { some: { user: { email: { contains: term.toLowerCase() } } } } }] } : {}),
+        ...(q.status ? statusFilter[q.status] : {}),
+      },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 51,
       ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
@@ -171,8 +228,10 @@ export async function adminRoutes(app: FastifyInstance) {
       where: { id },
       include: {
         subscription: { include: { plan: true } },
-        memberships: { include: { user: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" } },
+        memberships: { include: { user: { select: { id: true, name: true, email: true, emailVerifiedAt: true } } }, orderBy: { createdAt: "asc" } },
         applications: { orderBy: { createdAt: "asc" } },
+        webhooks: { orderBy: { createdAt: "asc" }, include: { application: { select: { name: true } } } },
+        verifications: { orderBy: { createdAt: "desc" }, take: 20, include: { application: { select: { name: true } } } },
         devices: { include: { line: true }, orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
       },
     });
@@ -200,7 +259,17 @@ export async function adminRoutes(app: FastifyInstance) {
           }
         : null,
       stats: { verified_30d: verified30d, failed_webhooks_30d: failedWebhooks },
-      members: org.memberships.map((m) => ({ name: m.user.name, email: m.user.email, role: m.role })),
+      members: org.memberships.map((m) => ({ id: m.user.id, name: m.user.name, email: m.user.email, role: m.role, email_verified: !!m.user.emailVerifiedAt })),
+      webhooks: org.webhooks.map((w) => ({ id: w.id, url: redactUrl(w.url), environment: w.environment, enabled: w.enabled, application: w.application.name })),
+      verifications: org.verifications.map((v) => ({
+        id: v.id,
+        application: v.application.name,
+        environment: v.environment,
+        phone_masked: v.phoneMasked,
+        status: v.status,
+        failure_reason: v.failureReason,
+        created_at: v.createdAt.toISOString(),
+      })),
       applications: org.applications.map((a) => ({ id: a.id, name: a.name, live_enabled: a.liveEnabled, archived: !!a.archivedAt })),
       devices: org.devices.map((d) => ({
         id: d.id,
@@ -212,6 +281,32 @@ export async function adminRoutes(app: FastifyInstance) {
         line: d.line ? { phone_masked: maskPhone(d.line.phoneE164), status: d.line.status } : null,
       })),
     };
+  });
+
+  app.patch("/v1/admin/organizations/:id", async (req) => {
+    const { user } = await adminContext(req);
+    const { id } = req.params as { id: string };
+    const body = parse(z.object({ name: z.string().trim().min(2).max(80) }), req.body);
+    const org = await prisma.organization.findUnique({ where: { id } });
+    if (!org) throw notFound("Organização");
+    await prisma.organization.update({ where: { id }, data: { name: body.name } });
+    await audit({ organizationId: id, actorType: "superadmin", actorId: user.id, action: "admin.organization_renamed", targetType: "organization", targetId: id, metadata: { before: org.name, after: body.name } });
+    return { status: "ok" };
+  });
+
+  /** Irreversível: exige repetir o nome. Contas sem outra organização saem junto; superadmin nunca. */
+  app.post("/v1/admin/organizations/:id/delete", async (req) => {
+    const { user } = await adminContext(req);
+    const { id } = req.params as { id: string };
+    const body = parse(z.object({ confirm_name: z.string().max(80), reason }), req.body);
+    const org = await prisma.organization.findUnique({ where: { id }, include: { memberships: { include: { user: { include: { _count: { select: { memberships: true } } } } } } } });
+    if (!org) throw notFound("Organização");
+    if (body.confirm_name.trim() !== org.name) throw invalid("O nome digitado não confere.");
+    const orphans = org.memberships.filter((m) => m.user._count.memberships === 1 && !m.user.isSuperAdmin).map((m) => m.userId);
+    await prisma.$transaction([prisma.organization.delete({ where: { id } }), prisma.user.deleteMany({ where: { id: { in: orphans } } })]);
+    // Sem organizationId: o registro sobrevive à exclusão.
+    await audit({ actorType: "superadmin", actorId: user.id, action: "admin.organization_deleted", targetType: "organization", targetId: id, metadata: { name: org.name, reason: body.reason, users_removed: orphans.length } });
+    return { status: "ok" };
   });
 
   app.post("/v1/admin/organizations/:id/suspend", async (req) => {
@@ -280,10 +375,103 @@ export async function adminRoutes(app: FastifyInstance) {
     return { status: "ok" };
   });
 
+  // ------------------------------------------------------------------ usuários
+
+  app.get("/v1/admin/users", async (req) => {
+    await adminContext(req);
+    const q = parse(z.object({ q: z.string().trim().max(120).optional(), cursor: z.string().max(40).optional() }), req.query);
+    const term = q.q || undefined;
+    const rows = await prisma.user.findMany({
+      where: term ? { OR: [{ email: { contains: normalizeEmail(term) } }, { name: { contains: term, mode: "insensitive" } }] } : undefined,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 51,
+      ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+      include: {
+        memberships: { include: { organization: { select: { id: true, name: true } } } },
+        sessions: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+      },
+    });
+    const page = rows.slice(0, 50);
+    return {
+      data: page.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        email_verified: !!u.emailVerifiedAt,
+        is_super_admin: u.isSuperAdmin,
+        created_at: u.createdAt.toISOString(),
+        last_login_at: u.sessions[0]?.createdAt.toISOString() ?? null,
+        organizations: u.memberships.map((m) => ({ id: m.organization.id, name: m.organization.name, role: m.role })),
+      })),
+      next_cursor: rows.length > 50 ? page[page.length - 1]!.id : null,
+    };
+  });
+
+  app.post("/v1/admin/users/:id/:action", { config: limit(30) }, async (req) => {
+    const { user: admin } = await adminContext(req);
+    const { id, action } = parse(z.object({ id: z.string().max(40), action: z.enum(["confirm-email", "resend-confirmation", "send-reset", "end-sessions"]) }), req.params);
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) throw notFound("Usuário");
+    if (action === "confirm-email") await prisma.user.update({ where: { id }, data: { emailVerifiedAt: target.emailVerifiedAt ?? new Date() } });
+    if (action === "resend-confirmation") await resendVerification(target.email);
+    if (action === "send-reset") await forgotPassword(target.email);
+    if (action === "end-sessions") {
+      if (id === admin.id) throw invalid("Para encerrar a sua própria sessão, use Sair.");
+      await revokeAllSessions(id);
+    }
+    await audit({ actorType: "superadmin", actorId: admin.id, action: `admin.user_${action.replace(/-/g, "_")}`, targetType: "user", targetId: id });
+    return { status: "ok" };
+  });
+
+  // ------------------------------------------------------------------ planos
+
+  const planFields = {
+    name: z.string().trim().min(2).max(60),
+    price_cents: z.number().int().min(0).max(100_000_000),
+    max_live_applications: z.number().int().min(0).max(10_000),
+    max_devices: z.number().int().min(0).max(10_000),
+    active: z.boolean(),
+  };
+  const planData = (b: { name: string; price_cents: number; max_live_applications: number; max_devices: number; active: boolean }) => ({
+    name: b.name,
+    priceCents: b.price_cents,
+    maxLiveApplications: b.max_live_applications,
+    maxDevices: b.max_devices,
+    active: b.active,
+  });
+
   app.get("/v1/admin/plans", async (req) => {
     await adminContext(req);
-    const plans = await prisma.plan.findMany({ orderBy: { priceCents: "asc" } });
-    return plans.map((p) => ({ code: p.code, name: p.name, price_cents: p.priceCents, max_live_applications: p.maxLiveApplications, max_devices: p.maxDevices, active: p.active }));
+    const plans = await prisma.plan.findMany({ orderBy: { priceCents: "asc" }, include: { _count: { select: { subscriptions: true } } } });
+    return plans.map((p) => ({ code: p.code, name: p.name, price_cents: p.priceCents, max_live_applications: p.maxLiveApplications, max_devices: p.maxDevices, active: p.active, subscribers: p._count.subscriptions }));
+  });
+
+  app.post("/v1/admin/plans", async (req) => {
+    const { user } = await adminContext(req);
+    const body = parse(z.object({ code: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{2,40}$/, "Use letras minúsculas, números e hífen."), ...planFields }), req.body);
+    if (await prisma.plan.findUnique({ where: { code: body.code } })) throw new ApiError("conflict", "Já existe um plano com esse código.");
+    await prisma.plan.create({ data: { code: body.code, ...planData(body) } });
+    await audit({ actorType: "superadmin", actorId: user.id, action: "admin.plan_created", targetType: "plan", targetId: body.code, metadata: { after: planData(body) } });
+    return { status: "ok" };
+  });
+
+  /** Limites valem na hora para todos os assinantes do plano; desativar só impede novas contratações. */
+  app.put("/v1/admin/plans/:code", async (req) => {
+    const { user } = await adminContext(req);
+    const { code } = req.params as { code: string };
+    const body = parse(z.object(planFields), req.body);
+    const plan = await prisma.plan.findUnique({ where: { code } });
+    if (!plan) throw notFound("Plano");
+    await prisma.plan.update({ where: { code }, data: planData(body) });
+    await audit({
+      actorType: "superadmin",
+      actorId: user.id,
+      action: "admin.plan_changed",
+      targetType: "plan",
+      targetId: code,
+      metadata: { before: { name: plan.name, priceCents: plan.priceCents, maxLiveApplications: plan.maxLiveApplications, maxDevices: plan.maxDevices, active: plan.active }, after: planData(body) },
+    });
+    return { status: "ok" };
   });
 
   app.get("/v1/admin/audit-logs", async (req) => {

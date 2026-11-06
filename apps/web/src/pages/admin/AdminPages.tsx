@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Building2, ChevronRight, Search } from "lucide-react";
-import { deviceHealthStatus, EmptyState, LoadError, Loading, PageHeader, StatusBadge, type Tone } from "@/components/common";
+import { deviceHealthStatus, EmptyState, LoadError, Loading, PageHeader, StatusBadge, verificationStatus, type Tone } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Card, Notice } from "@/components/ui/card";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, FormError, SelectField } from "@/components/ui/form";
 import { useAction } from "@/lib/action";
 import { dateTime, money, relative, roleLabel } from "@/lib/format";
-import { panel, post, useResource } from "@/lib/session";
+import { panel, patch, post, useResource } from "@/lib/session";
 import type { ApiError } from "@/lib/api";
 import type { Health, SubscriptionStatus } from "@/lib/types";
 import { auditLabel } from "@/pages/app/Settings";
@@ -34,7 +34,9 @@ interface OrgDetail {
   entitlements: { plan_name: string; status: SubscriptionStatus; max_live_applications: number; max_devices: number };
   subscription: { plan_code: string; status: "active" | "suspended" | "cancelled"; current_period_end: string | null; notes: string | null; updated_at: string } | null;
   stats: { verified_30d: number; failed_webhooks_30d: number };
-  members: { name: string; email: string; role: keyof typeof roleLabel }[];
+  members: { id: string; name: string; email: string; role: keyof typeof roleLabel; email_verified: boolean }[];
+  webhooks: { id: string; url: string; environment: string; enabled: boolean; application: string }[];
+  verifications: { id: string; application: string; environment: string; phone_masked: string; status: string; failure_reason: string | null; created_at: string }[];
   applications: { id: string; name: string; live_enabled: boolean; archived: boolean }[];
   devices: { id: string; name: string; model: string | null; status: string; health: Health; last_seen_at: string | null; line: { phone_masked: string; status: string } | null }[];
 }
@@ -74,7 +76,7 @@ function OrgStatus({ suspended, status }: { suspended: boolean; status: Subscrip
 }
 
 /** Lista paginada por cursor; recarrega do início quando a busca muda. */
-function usePaged<T>(path: string) {
+export function usePaged<T>(path: string) {
   const [items, setItems] = useState<T[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
@@ -108,28 +110,36 @@ function usePaged<T>(path: string) {
 export function AdminOrganizations() {
   const [term, setTerm] = useState("");
   const [query, setQuery] = useState("");
-  const list = usePaged<OrgRow>(`/admin/organizations${query ? `?q=${encodeURIComponent(query)}` : ""}`);
+  const [status, setStatus] = useState("");
+  const qs = new URLSearchParams({ ...(query ? { q: query } : {}), ...(status ? { status } : {}) }).toString();
+  const list = usePaged<OrgRow>(`/admin/organizations${qs ? `?${qs}` : ""}`);
 
   return (
     <>
-      <PageHeader title="Organizações" description="Contas de clientes, planos e situação. Mudanças ficam no registro de ações." />
+      <PageHeader title="Clientes" description="Todas as organizações, com plano e situação. Mudanças ficam no registro de ações." />
       <form
         role="search"
-        className="flex max-w-xl gap-2"
+        className="flex max-w-3xl flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           setQuery(term.trim());
         }}
       >
-        <Field label="Buscar por nome, e-mail de membro ou id" className="flex-1" value={term} onChange={(e) => setTerm(e.target.value)} />
+        <Field label="Buscar por nome, e-mail de membro ou id" className="min-w-56 flex-1" value={term} onChange={(e) => setTerm(e.target.value)} />
+        <SelectField label="Situação" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">Todos</option>
+          <option value="paying">Com assinatura ativa</option>
+          <option value="sandbox">Só teste</option>
+          <option value="suspended">Suspensos</option>
+        </SelectField>
         <Button type="submit" className="self-end" aria-label="Buscar"><Search aria-hidden /> Buscar</Button>
       </form>
       {list.error && !list.items.length && <LoadError error={list.error} onRetry={list.reload} />}
-      {!list.loading && !list.error && list.items.length === 0 && <EmptyState icon={Building2} title="Nenhuma organização" text={query ? "Nada encontrado para essa busca." : "Ainda não há contas cadastradas."} />}
+      {!list.loading && !list.error && list.items.length === 0 && <EmptyState icon={Building2} title="Nenhum cliente" text={query || status ? "Nada encontrado para essa busca." : "Ainda não há contas cadastradas."} />}
       <ul className="space-y-3">
         {list.items.map((o) => (
           <li key={o.id}>
-            <Link to={`/admin/organizacoes/${o.id}`} className="block">
+            <Link to={`/admin/clientes/${o.id}`} className="block">
               <Card className="flex flex-wrap items-center gap-x-6 gap-y-2 hover:border-petroleo">
                 <div className="min-w-48 flex-1">
                   <p className="text-lg font-bold">{o.name}</p>
@@ -157,6 +167,8 @@ export function AdminOrganization() {
   const [editing, setEditing] = useState(false);
   const [suspending, setSuspending] = useState(false);
   const [revoking, setRevoking] = useState<OrgDetail["devices"][number] | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => onError(org.error), [org.error, onError]);
 
@@ -168,7 +180,7 @@ export function AdminOrganization() {
 
   return (
     <>
-      <Link to="/admin" className="text-[15px] font-semibold underline underline-offset-4">← Organizações</Link>
+      <Link to="/admin/clientes" className="text-[15px] font-semibold underline underline-offset-4">← Clientes</Link>
       <PageHeader title={o.name} description={`Criada em ${dateTime(o.created_at)} · id ${o.id}`} action={<OrgStatus suspended={suspended} status={o.entitlements.status} />} />
       {suspended && (
         <Notice tone="error">
@@ -201,6 +213,7 @@ export function AdminOrganization() {
           <p className="text-lg">{o.stats.failed_webhooks_30d} aviso(s) automático(s) não entregue(s)</p>
           <div className="flex flex-wrap gap-2 pt-2">
             <Button variant={suspended ? "primary" : "danger"} onClick={() => setSuspending(true)}>{suspended ? "Reativar organização" : "Suspender organização"}</Button>
+            <Button variant="outline" onClick={() => setRenaming(true)}>Renomear</Button>
             <Button asChild variant="ghost"><Link to={`/admin/auditoria?org=${o.id}`}>Ver registro de ações</Link></Button>
           </div>
         </Card>
@@ -230,7 +243,11 @@ export function AdminOrganization() {
         <Card className="space-y-3">
           <h2 className="text-xl font-bold">Equipe</h2>
           <ul className="space-y-2">
-            {o.members.map((m) => <li key={m.email}><strong>{m.name}</strong> · {m.email} · {roleLabel[m.role]}</li>)}
+            {o.members.map((m) => (
+              <li key={m.id}>
+                <strong>{m.name}</strong> · {m.email} · {roleLabel[m.role]}{!m.email_verified && " · e-mail não confirmado"}
+              </li>
+            ))}
           </ul>
         </Card>
         <Card className="space-y-3">
@@ -244,6 +261,41 @@ export function AdminOrganization() {
         </Card>
       </div>
 
+      <Card className="space-y-3">
+        <h2 className="text-xl font-bold">Avisos automáticos</h2>
+        {o.webhooks.length === 0 && <p className="text-petroleo-soft">Nenhum endereço cadastrado.</p>}
+        <ul className="space-y-2">
+          {o.webhooks.map((w) => (
+            <li key={w.id} className="break-all">{w.application} · {w.environment === "live" ? "produção" : "teste"} · {w.url} · {w.enabled ? "ligado" : "desligado"}</li>
+          ))}
+        </ul>
+      </Card>
+
+      <Card className="space-y-3">
+        <h2 className="text-xl font-bold">Últimas verificações</h2>
+        {o.verifications.length === 0 && <p className="text-petroleo-soft">Nenhuma verificação ainda.</p>}
+        <ul className="divide-y divide-linha">
+          {o.verifications.map((v) => {
+            const st = verificationStatus[v.status] ?? { tone: "off" as const, label: v.status };
+            return (
+              <li key={v.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5">
+                <p className="min-w-48 flex-1">{v.phone_masked} · {v.application} · {v.environment === "live" ? "produção" : "teste"}</p>
+                <p className="text-sm text-petroleo-soft">{dateTime(v.created_at)}</p>
+                <StatusBadge tone={st.tone}>{st.label}</StatusBadge>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      <Card className="space-y-3 border-erro/40">
+        <h2 className="text-xl font-bold">Excluir cliente</h2>
+        <p>Apaga a organização, aplicações, aparelhos e histórico. Não pode ser desfeito. Prefira suspender se houver chance de o cliente voltar.</p>
+        <div><Button variant="danger" onClick={() => setDeleting(true)}>Excluir cliente</Button></div>
+      </Card>
+
+      <RenameDrawer open={renaming} onClose={() => setRenaming(false)} org={o} onSaved={org.reload} />
+      <DeleteDrawer open={deleting} onClose={() => setDeleting(false)} org={o} />
       <PlanDrawer open={editing} onClose={() => setEditing(false)} org={o} plans={plans.data ?? []} onSaved={org.reload} />
       <ReasonDrawer
         open={suspending}
@@ -270,6 +322,54 @@ export function AdminOrganization() {
         }}
       />
     </>
+  );
+}
+
+function RenameDrawer({ open, onClose, org, onSaved }: { open: boolean; onClose: () => void; org: OrgDetail; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  useEffect(() => {
+    if (open) setName(org.name);
+  }, [open, org.name]);
+  const save = useAction(async () => {
+    await patch(`/admin/organizations/${org.id}`, { name: name.trim() });
+    onSaved();
+    onClose();
+  });
+  return (
+    <Drawer open={open} onClose={onClose} title="Renomear cliente">
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); save.run(); }}>
+        <Field label="Nome da organização" value={name} minLength={2} maxLength={80} onChange={(e) => setName(e.target.value)} required />
+        <FormError message={save.error} />
+        <Button type="submit" size="lg" className="w-full" disabled={save.busy || name.trim().length < 2}>Salvar</Button>
+      </form>
+    </Drawer>
+  );
+}
+
+function DeleteDrawer({ open, onClose, org }: { open: boolean; onClose: () => void; org: OrgDetail }) {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [reason, setReason] = useState("");
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setReason("");
+    }
+  }, [open]);
+  const run = useAction(async () => {
+    await post(`/admin/organizations/${org.id}/delete`, { confirm_name: name, reason: reason.trim() });
+    navigate("/admin/clientes", { replace: true });
+  });
+  return (
+    <Drawer open={open} onClose={onClose} title="Excluir cliente" description="Tudo desta organização é apagado na hora. Usuários que só pertencem a ela perdem a conta e precisarão se cadastrar de novo.">
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); run.run(); }}>
+        <Field label={`Digite "${org.name}" para confirmar`} value={name} autoComplete="off" onChange={(e) => setName(e.target.value)} required />
+        <Field label="Motivo (fica no registro de ações)" value={reason} minLength={3} maxLength={500} onChange={(e) => setReason(e.target.value)} required />
+        <FormError message={run.error} />
+        <Button type="submit" size="lg" variant="danger" className="w-full" disabled={run.busy || name.trim() !== org.name || reason.trim().length < 3}>Excluir definitivamente</Button>
+        <Button type="button" variant="ghost" className="w-full" onClick={onClose}>Voltar</Button>
+      </form>
+    </Drawer>
   );
 }
 
@@ -377,7 +477,16 @@ const actionLabel: Record<string, string> = {
   ...auditLabel,
   "admin.organization_suspended": "Organização suspensa",
   "admin.organization_reactivated": "Organização reativada",
-  "admin.subscription_changed": "Plano alterado",
+  "admin.subscription_changed": "Plano do cliente alterado",
+  "admin.login": "Entrada na administração",
+  "admin.organization_renamed": "Cliente renomeado",
+  "admin.organization_deleted": "Cliente excluído",
+  "admin.plan_created": "Plano criado",
+  "admin.plan_changed": "Plano editado",
+  "admin.user_confirm_email": "E-mail confirmado pela administração",
+  "admin.user_resend_confirmation": "Confirmação de e-mail reenviada",
+  "admin.user_send_reset": "Link de nova senha enviado",
+  "admin.user_end_sessions": "Sessões do usuário encerradas",
   "admin.mfa_enabled": "Autenticador configurado",
   "admin.mfa_failed": "Código do autenticador incorreto",
   "admin.mfa_recovery_used": "Código de recuperação usado",
@@ -426,7 +535,7 @@ export function AdminAudit() {
                   <p className="font-semibold">{actionLabel[a.action] ?? a.action}</p>
                   {a.metadata != null && <code className="mt-1 block max-w-md break-all text-xs text-petroleo-soft">{JSON.stringify(a.metadata)}</code>}
                 </td>
-                <td className="p-3">{a.organization ? <Link className="underline" to={`/admin/organizacoes/${a.organization.id}`}>{a.organization.name ?? a.organization.id}</Link> : "—"}</td>
+                <td className="p-3">{a.organization ? <Link className="underline" to={`/admin/clientes/${a.organization.id}`}>{a.organization.name ?? a.organization.id}</Link> : "—"}</td>
                 <td className="p-3">{actorLabel[a.actor_type] ?? a.actor_type}</td>
               </tr>
             ))}

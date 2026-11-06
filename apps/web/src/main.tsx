@@ -28,6 +28,11 @@ const Subscription = lazy(() => import("./pages/app/Subscription"));
 const Settings = lazy(() => import("./pages/app/Settings"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const admin = () => import("./pages/admin/AdminPages");
+const adminMore = () => import("./pages/admin/AdminMore");
+const AdminLogin = lazy(() => adminMore().then((m) => ({ default: m.AdminLogin })));
+const AdminOverview = lazy(() => adminMore().then((m) => ({ default: m.AdminOverview })));
+const AdminUsers = lazy(() => adminMore().then((m) => ({ default: m.AdminUsers })));
+const AdminPlans = lazy(() => adminMore().then((m) => ({ default: m.AdminPlans })));
 const AdminOrganizations = lazy(() => admin().then((m) => ({ default: m.AdminOrganizations })));
 const AdminOrganization = lazy(() => admin().then((m) => ({ default: m.AdminOrganization })));
 const AdminAudit = lazy(() => admin().then((m) => ({ default: m.AdminAudit })));
@@ -78,9 +83,13 @@ createRoot(document.getElementById("root")!).render(
               <Route path="assinatura" element={<Subscription />} />
               <Route path="configuracoes" element={<Settings />} />
             </Route>
+            <Route path="/admin/entrar" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminOrganizations />} />
-              <Route path="organizacoes/:id" element={<AdminOrganization />} />
+              <Route index element={<AdminOverview />} />
+              <Route path="clientes" element={<AdminOrganizations />} />
+              <Route path="clientes/:id" element={<AdminOrganization />} />
+              <Route path="usuarios" element={<AdminUsers />} />
+              <Route path="planos" element={<AdminPlans />} />
               <Route path="auditoria" element={<AdminAudit />} />
             </Route>
           </Route>

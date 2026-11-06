@@ -1,6 +1,6 @@
 import { createContext, Suspense, useCallback, useContext, useEffect, useState } from "react";
-import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
-import { ArrowLeft, Building2, KeyRound, LogOut, ScrollText } from "lucide-react";
+import { Link, Navigate, NavLink, Outlet } from "react-router";
+import { ArrowLeft, Building2, CreditCard, KeyRound, LayoutDashboard, LogOut, ScrollText, Users } from "lucide-react";
 import QRCode from "qrcode";
 import { Logo } from "@/components/brand";
 import { CopyButton, LoadError, Loading, PageHeader } from "@/components/common";
@@ -32,13 +32,15 @@ export function useAdminError() {
 }
 
 const NAV = [
-  { to: "/admin", label: "Organizações", icon: Building2, end: true },
+  { to: "/admin", label: "Visão geral", icon: LayoutDashboard, end: true },
+  { to: "/admin/clientes", label: "Clientes", icon: Building2 },
+  { to: "/admin/usuarios", label: "Usuários", icon: Users },
+  { to: "/admin/planos", label: "Planos", icon: CreditCard },
   { to: "/admin/auditoria", label: "Registro de ações", icon: ScrollText },
 ];
 
 export default function AdminLayout() {
   const { me, loading, logout } = useSession();
-  const location = useLocation();
   const [mfa, setMfa] = useState<Mfa | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
 
@@ -56,7 +58,7 @@ export default function AdminLayout() {
   }, [me, load]);
 
   if (loading) return <div className="p-8"><Loading /></div>;
-  if (!me) return <Navigate to="/entrar" replace state={{ from: location.pathname }} />;
+  if (!me) return <Navigate to="/admin/entrar" replace />;
   if (!me.user.is_super_admin) return <Navigate to="/app" replace />;
 
   let body;
@@ -80,7 +82,7 @@ export default function AdminLayout() {
             <span className="rounded-full bg-lima px-3 py-1 text-sm font-bold text-petroleo">Administração</span>
           </Link>
           {mfa?.verified && (
-            <nav aria-label="Administração" className="flex gap-1">
+            <nav aria-label="Administração" className="flex flex-wrap gap-1">
               {NAV.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
                   key={to}
@@ -94,7 +96,7 @@ export default function AdminLayout() {
             </nav>
           )}
           <div className="ml-auto flex gap-1">
-            <Link to="/app" className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-white/10"><ArrowLeft className="size-5" aria-hidden /> Painel</Link>
+            {me.organizations.length > 0 && <Link to="/app" className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-white/10"><ArrowLeft className="size-5" aria-hidden /> Painel do cliente</Link>}
             <button onClick={logout} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-white/10"><LogOut className="size-5" aria-hidden /> Sair</button>
           </div>
         </div>

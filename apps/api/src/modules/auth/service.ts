@@ -85,10 +85,11 @@ export async function createSession(userId: string, userAgent?: string) {
   return { token, session };
 }
 
-export async function login(emailRaw: string, password: string) {
+export async function login(emailRaw: string, password: string, opts: { superAdminOnly?: boolean } = {}) {
   const user = await prisma.user.findUnique({ where: { email: normalizeEmail(emailRaw) } });
   const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !ok) throw new ApiError("unauthorized", "E-mail ou senha incorretos.");
+  // Mesma mensagem para cliente: o login da administração não revela quem tem conta.
+  if (!user || !ok || (opts.superAdminOnly && !user.isSuperAdmin)) throw new ApiError("unauthorized", "E-mail ou senha incorretos.");
   if (!user.emailVerifiedAt) {
     throw new ApiError("forbidden", "Confirme seu e-mail para entrar. Veja sua caixa de entrada.", { reason: "email_not_verified" });
   }

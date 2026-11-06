@@ -12,7 +12,7 @@ export function relative(iso: string | null | undefined) {
 }
 
 export const money = (cents: number) =>
-  (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: cents % 100 ? 2 : 0 });
 
 export const roleLabel = { owner: "Proprietário", developer: "Desenvolvimento", viewer: "Visualização" } as const;
 

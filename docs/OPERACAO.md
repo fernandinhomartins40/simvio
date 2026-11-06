@@ -39,6 +39,7 @@ Logs dos containers giram sozinhos (10 MB × 5 por serviço).
 - **Chave de API vazada:** Painel → Aplicações → Chaves → Rotacionar (a antiga para na hora).
 - **Segredo de webhook vazado:** Avisos automáticos → Rotacionar segredo; atualize no backend do cliente.
 - **Superadmin novo:** `docker compose run --rm api node dist/scripts/bootstrap.js --email … --super-admin`.
+- **Painel de administração:** `/admin/entrar` (login próprio, recusa contas de cliente; link discreto no rodapé da página inicial). Exige aplicativo autenticador. Tem visão geral, clientes (plano, suspensão, renomear, excluir), usuários (reenviar confirmação, link de nova senha, encerrar sessões) e planos. Tudo fica no registro de ações. Os preços da página inicial são fixos no código.
 - **Exclusão de uma organização (pedido do cliente):** não há botão; é ação manual e auditada.
   1. Suspenda a organização em Administração (para novas verificações e pareamentos).
   2. Registre o pedido (quem pediu, data) fora do sistema.

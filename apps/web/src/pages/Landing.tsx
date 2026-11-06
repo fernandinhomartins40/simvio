@@ -193,6 +193,7 @@ export default function Landing() {
           <Link to="/documentacao" className="hover:underline">Documentação</Link>
           <a href={APK_URL} className="hover:underline">Baixar app Android</a>
           <Link to="/entrar" className="hover:underline">Entrar</Link>
+          <Link to="/admin/entrar" className="self-center text-sm text-petroleo-soft hover:underline">Administração</Link>
         </nav>
       </footer>
     </div>
