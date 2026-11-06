@@ -16,6 +16,7 @@ import app.simvio.receptor.data.DiagnosticsSnapshot
 import app.simvio.receptor.data.EventSender
 import app.simvio.receptor.data.RevokedException
 import app.simvio.receptor.data.SecureStore
+import app.simvio.receptor.sms.SmsBox
 import app.simvio.receptor.work.Work
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,6 +51,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var error by mutableStateOf<String?>(null)
     var revokedNotice by mutableStateOf(store.revokedNotice); private set
     var lineCheckExpired by mutableStateOf(false); private set
+    var defaultSms by mutableStateOf(SmsBox.isDefault(app)); private set
 
     // Pré-preenchidos pelo QR / link simvio://pair
     var pairApi by mutableStateOf(store.apiBase ?: "https://")
@@ -72,6 +74,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         lastContactAt = store.lastContactAt
         paired = store.isPaired
         revokedNotice = store.revokedNotice
+        defaultSms = SmsBox.isDefault(getApplication())
     }
 
     fun dismissRevoked() {

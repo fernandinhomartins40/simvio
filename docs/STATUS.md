@@ -36,6 +36,7 @@
 | Telas do painel web (auth, início, aplicações, aparelhos com QR, verificações, avisos, equipe, assinatura, configurações, landing, documentação) | ✅ | ✅ typecheck + vite build + imagem Docker | ❌ sem testes automáticos de UI (conferidas por captura com API real) | — |
 | Página pública `/v/:token` | ✅ | ✅ | ❌ (conferida visualmente por captura) | ⏳ |
 | App Android (receiver, fila cifrada, WorkManager, heartbeat, telas; revisado em 04/11: sem permissão de notificações, aviso de revogação em segundo plano, teste de linha expirado, índice de SIM legado) | ✅ | ✅ debug 19,4 MB / release R8 sem assinatura 2,2 MB | ✅ 5 testes JVM; lint 0 erros (40 avisos de estilo) | ⏳ |
+| Modo opcional de app de SMS padrão (recebe, grava, notifica, conversas e envio; encaminha só `SIMVIO`; sem MMS) | ✅ | ✅ | ✅ testes JVM + emulador Android 15 em 06/11 | ⏳ |
 | OpenAPI 3.1 (`docs/openapi.yaml`) — integração, sessão pública, webhooks, erros reais | ✅ | ✅ `redocly lint` sem erros nem avisos | — | — |
 | Exemplo Node.js | ✅ | — | ✅ 2 testes; usado no E2E | ⏳ |
 | Exemplo PHP puro + Laravel (`examples/php`) | ✅ | ✅ `php -l` (PHP 8.3) | ✅ 14 checagens: assinatura idêntica aos vetores gerados pela API Node, rejeições | ❌ não rodado num projeto Laravel real |

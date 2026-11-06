@@ -18,14 +18,19 @@ object SmsParser {
      * Remonta multipartes (mesmo remetente, na ordem recebida) e devolve SOMENTE mensagens Simvio.
      * Qualquer outra mensagem é descartada aqui: não é persistida nem enviada.
      */
-    fun parse(parts: List<SmsPart>): List<SimvioSms> {
-        val grouped = LinkedHashMap<String, MutableList<SmsPart>>()
-        for (p in parts) grouped.getOrPut(p.sender) { mutableListOf() }.add(p)
-        return grouped.mapNotNull { (sender, list) ->
-            val body = list.joinToString("") { it.body }
-            extractToken(body)?.let { SimvioSms(sender, it, list.first().timestampMillis) }
-        }
-    }
+    fun parse(parts: List<SmsPart>): List<SimvioSms> =
+        join(parts).mapNotNull { m -> extractToken(m.body)?.let { SimvioSms(m.sender, it, m.timestampMillis) } }
+
+    private fun join(parts: List<SmsPart>): List<SmsPart> =
+        parts.groupBy { it.sender }.map { (sender, list) -> SmsPart(sender, list.joinToString("") { it.body }, list.first().timestampMillis) }
+
+    /** Modo app padrão: o que vai para a caixa do aparelho. O token SIMVIO não fica guardado num aparelho conectado. */
+    fun toStore(parts: List<SmsPart>, paired: Boolean): List<SmsPart> =
+        join(parts).filter { !paired || extractToken(it.body) == null }
+
+    /** "número?body=texto" (parte do link sms:/smsto: já decodificada) em número e texto. */
+    fun parseSmsUri(part: String): Pair<String, String> =
+        part.substringBefore('?').trim() to part.substringAfter("body=", "")
 
     /**
      * Identificador estável do evento: o mesmo SMS entregue duas vezes gera o mesmo id,

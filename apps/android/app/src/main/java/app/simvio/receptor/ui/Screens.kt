@@ -79,7 +79,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 @Composable
-private fun ScreenColumn(content: @Composable () -> Unit) {
+internal fun ScreenColumn(content: @Composable () -> Unit) {
     Column(
         Modifier.fillMaxSize().background(Mineral).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -156,6 +156,7 @@ fun PermissionScreen(onRequest: () -> Unit, permanentlyDenied: Boolean) {
             })
         } else {
             PrimaryButton("Permitir", onClick = onRequest)
+            SecondaryButton("Usar como app de SMS padrão", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
         }
     }
 }
@@ -323,6 +324,10 @@ private fun StatusTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
             )
         }
         if (!d.batteryOptimizationIgnored || d.backgroundRestricted) SecondaryButton("Ver ajustes de bateria", onClick = onOpenBattery)
+        if (vm.defaultSms) {
+            val ctx = LocalContext.current
+            SecondaryButton("Abrir mensagens", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
+        }
         Text(
             "\"Comunicação recente\" mostra que o app falou com a Simvio. Para confirmar o recebimento de SMS, faça uma verificação de teste pelo painel.",
             color = PetroleoSuave, style = MaterialTheme.typography.bodyMedium,
@@ -365,14 +370,18 @@ private fun ActivityTab(vm: MainViewModel) {
 private fun SettingsTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
     var confirmUnpair by remember { mutableStateOf(false) }
     var confirmChange by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
     ScreenColumn {
         BigTitle("Ajustes")
         SimvioCard {
             Info("Servidor", vm.apiHost ?: "—")
             Info("Linha", vm.line?.display ?: "—")
+            Info("App de SMS padrão", if (vm.defaultSms) "Simvio" else "Outro app")
             Info("Versão do app", Diagnostics.appVersion)
             Info("Identificador", vm.deviceId?.takeLast(8) ?: "—")
         }
+        SecondaryButton(if (vm.defaultSms) "Abrir mensagens" else "Usar como app de SMS padrão", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
+        if (vm.defaultSms) SecondaryButton("Trocar o app de SMS padrão", onClick = { ctx.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) })
         SecondaryButton("Ajustes de bateria do Android", onClick = onOpenBattery)
         SecondaryButton("Trocar número/chip", onClick = { confirmChange = true })
         TextButton(onClick = { confirmUnpair = true }, modifier = Modifier.fillMaxWidth()) {

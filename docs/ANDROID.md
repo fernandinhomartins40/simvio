@@ -38,9 +38,10 @@ Guarde a chave com backup seguro: perder a chave impede atualizar o app instalad
 |---|---|---|
 | `RECEIVE_SMS` | Receber novos SMS de verificação | Sem `READ_SMS`: não lê histórico. Mensagens fora do formato `SIMVIO <token>` são descartadas no próprio aparelho. |
 | `INTERNET`, `ACCESS_NETWORK_STATE` | Encaminhar eventos e diagnosticar rede | — |
+| `READ_SMS`, `SEND_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH`, `POST_NOTIFICATIONS` | Modo opcional de app de SMS padrão | Só concedidas se o operador escolher esse modo. Conversas ficam no aparelho e não vão à API. |
 
 Não solicitamos câmera (o QR é lido pelo leitor do Google Play services, com alternativa de digitar
-o código), nem `READ_PHONE_STATE`/`READ_PHONE_NUMBERS`, nem para ser app padrão de SMS, nem isenção
+o código), nem `READ_PHONE_STATE`/`READ_PHONE_NUMBERS`, nem isenção
 direta de otimização de bateria (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). O app só **abre** a tela do
 sistema para o operador decidir.
 
@@ -48,6 +49,15 @@ sistema para o operador decidir.
 (`EXTRA_SUBSCRIPTION_INDEX`, com a chave legada `subscription` como reserva em Androids antigos).
 A linha grava o SIM que recebeu o teste; eventos de outro SIM (ou sem índice) falham com
 `rejected_receiver_sim`. Recomendação do piloto: um único chip ativo no aparelho receptor.
+
+## Modo app de SMS padrão (aparelho dedicado)
+
+Opcional, em Ajustes › "Usar como app de SMS padrão". O app passa a receber (`SMS_DELIVER`), gravar na
+caixa do sistema, notificar, listar conversas e enviar. O encaminhamento continua só no `SmsReceiver`.
+Mensagens `SIMVIO` não são gravadas em aparelho conectado. **MMS não é baixado.** Enviar sempre depende
+de toque do operador; links `sms:` só preenchem a tela. Este modo atende ao requisito da exceção de app
+padrão do Google Play, mas **não remove o bloqueio do Play Protect em APK instalado fora da loja**: esse
+bloqueio olha as permissões declaradas. Para clientes finais o caminho é a Play Store, com aprovação não garantida.
 
 ## Segundo plano — como funciona e limites
 

@@ -56,4 +56,18 @@ class SmsParserTest {
         assertEquals("••••0001", SmsParser.maskSender("+5511999990001"))
         assertEquals("remetente não numérico", SmsParser.maskSender("BANCO"))
     }
+
+    @Test
+    fun `app padrao guarda mensagens comuns e nao guarda token SIMVIO quando conectado`() {
+        val token = "SIMVIO " + "A".repeat(26)
+        val parts = listOf(SmsPart("+5511", "Ola ", 1), SmsPart("+5511", "mundo", 2), SmsPart("+5522", token, 3))
+        assertEquals(listOf(SmsPart("+5511", "Ola mundo", 1)), SmsParser.toStore(parts, paired = true))
+        assertEquals(2, SmsParser.toStore(parts, paired = false).size)
+    }
+
+    @Test
+    fun `link sms separa numero e texto`() {
+        assertEquals("+5511999" to "SIMVIO ABC", SmsParser.parseSmsUri("+5511999?body=SIMVIO ABC"))
+        assertEquals("+5511999" to "", SmsParser.parseSmsUri("+5511999"))
+    }
 }
