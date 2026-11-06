@@ -1,0 +1,84 @@
+[
+  {
+    "arquivo": "LEIA-ME.md",
+    "bytes": 2772,
+    "sha256": "dab109d3c9b2503bf48a0860e2d7ec6e917d1512fbad9ea1c4e11f138b503279"
+  },
+  {
+    "arquivo": "fundos/fundo-desktop.png",
+    "bytes": 1187623,
+    "sha256": "5846ed251b43c9e69851f548bebc51685a370ac3365c4fa21d5eb72ce1e97f6e",
+    "largura": 1672,
+    "altura": 941,
+    "modo": "RGB",
+    "transparencia": false
+  },
+  {
+    "arquivo": "fundos/fundo-mobile.png",
+    "bytes": 1170659,
+    "sha256": "2dfd563dd176206d495203db8b8df32005e2b44e7b9f53b26c9106fd1acca7f0",
+    "largura": 941,
+    "altura": 1672,
+    "modo": "RGB",
+    "transparencia": false
+  },
+  {
+    "arquivo": "ilustracoes/estado-vazio-conectar.png",
+    "bytes": 1285990,
+    "sha256": "676408a73838951d66518178b5827c0fd9e99e876a20e212dcde630e13ec3420",
+    "largura": 1536,
+    "altura": 1024,
+    "modo": "RGBA",
+    "transparencia": true
+  },
+  {
+    "arquivo": "ilustracoes/hero-android-receptor.png",
+    "bytes": 1260330,
+    "sha256": "a13c0a4b958eb8e842c62a8c41629e1cec8fc704bb5d206092546e407ede0bfb",
+    "largura": 1024,
+    "altura": 1536,
+    "modo": "RGBA",
+    "transparencia": true
+  },
+  {
+    "arquivo": "ilustracoes/hero-celular-emissor.png",
+    "bytes": 1310833,
+    "sha256": "6bf331e6db3afc7e1f2b63b5190ca8a63fbc8604bcb6b0c97edac4d03e23b366",
+    "largura": 1024,
+    "altura": 1536,
+    "modo": "RGBA",
+    "transparencia": true
+  },
+  {
+    "arquivo": "ilustracoes/hero-confirmacao.png",
+    "bytes": 1118119,
+    "sha256": "386314403a96df5bd97ec3b583179d86efe82119dd2c004520edf4d75e99f98e",
+    "largura": 1366,
+    "altura": 1152,
+    "modo": "RGBA",
+    "transparencia": true
+  },
+  {
+    "arquivo": "marca/logo-aprovada-original-intacta.png",
+    "bytes": 1070837,
+    "sha256": "c843ab71579701904abe578f882b3761523df8975fb745af8d0c40421a282303",
+    "largura": 1944,
+    "altura": 809,
+    "modo": "RGB",
+    "transparencia": false
+  },
+  {
+    "arquivo": "marca/referencia-paleta-petroleo-lima.png",
+    "bytes": 1487241,
+    "sha256": "a099ae5d822c373e88104b34548390ac91e79504c02bd5549dcf142a3cd9cd4c",
+    "largura": 1536,
+    "altura": 1024,
+    "modo": "RGB",
+    "transparencia": false
+  },
+  {
+    "arquivo": "tokens.css",
+    "bytes": 383,
+    "sha256": "f2874f9b46248cd62715fb820ed8663392fe9bddfa59b1718366b0efc45a3f0f"
+  }
+]

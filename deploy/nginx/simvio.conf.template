@@ -1,0 +1,101 @@
+# Nginx de borda da Simvio: único serviço com porta publicada (${SIMVIO_PORT} -> 80).
+#   /      -> web:3000 (painel e página pública)
+#   /api/  -> api:3001, removendo apenas o prefixo /api  (ex.: /api/v1/x -> /v1/x)
+# Processado por envsubst na inicialização do container; só variáveis SIMVIO_* são substituídas.
+
+# DNS interno do Docker, reavaliado a cada 10 s (containers recriados mudam de IP).
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+upstream simvio_web {
+    zone simvio_web 64k;
+    server web:3000 resolve;
+    keepalive 16;
+}
+
+upstream simvio_api {
+    zone simvio_api 64k;
+    server api:3001 resolve;
+    keepalive 16;
+}
+
+# IP real do cliente: confia em X-Forwarded-For somente vindo do proxy central/rede local.
+set_real_ip_from ${SIMVIO_TRUSTED_PROXIES};
+real_ip_header X-Forwarded-For;
+real_ip_recursive on;
+
+# Protocolo original informado pelo proxy central (HTTPS), ou o desta conexão.
+map $http_x_forwarded_proto $simvio_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+# Logs sem tokens: caminhos com token viram marcadores; query string nunca é registrada.
+map $uri $simvio_log_path {
+    default                              $uri;
+    ~^/v/                                "/v/[token]";
+    ~^/api/v1/public/sessions/           "/api/v1/public/sessions/[token]";
+}
+
+log_format simvio_masked '$remote_addr - [$time_iso8601] "$request_method $simvio_log_path" '
+                         '$status $body_bytes_sent $request_time "$http_user_agent"';
+
+server {
+    listen 80 default_server;
+    server_name _;
+    server_tokens off;
+
+    access_log /dev/stdout simvio_masked;
+    error_log  /dev/stderr warn;
+
+    client_max_body_size 64k;
+    client_body_timeout 15s;
+    client_header_timeout 15s;
+    keepalive_timeout 30s;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    # Sobrescreve (não acumula): a API recebe apenas o IP já validado acima.
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $simvio_proto;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 30s;
+    proxy_read_timeout 30s;
+
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
+    # API pública e do painel (mesma origem). A barra final do proxy_pass remove só o /api.
+    location /api/ {
+        proxy_pass http://simvio_api/;
+        proxy_buffering off;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "no-store" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+    }
+
+    location = /api {
+        return 308 /api/;
+    }
+
+    # Página pública de verificação: o token na URL nunca vaza por Referer.
+    location /v/ {
+        proxy_pass http://simvio_web;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header Cache-Control;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header Cache-Control "no-store" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+    }
+
+    location / {
+        client_max_body_size 1m;
+        proxy_pass http://simvio_web;
+    }
+}

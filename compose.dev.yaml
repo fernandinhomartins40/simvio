@@ -1,0 +1,26 @@
+# SOMENTE DESENVOLVIMENTO LOCAL. Banco para rodar API/testes fora de containers.
+# Publica em 127.0.0.1 apenas. A stack de produção (compose.yaml) não publica o banco.
+name: simvio-dev
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: simvio
+      POSTGRES_PASSWORD: simvio_dev_only
+      POSTGRES_DB: simvio
+    ports:
+      - "127.0.0.1:${SIMVIO_DEV_DB_PORT:-15432}:5432"
+    volumes:
+      - devdb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simvio"]
+      interval: 2s
+      retries: 30
+  mailpit:
+    # Caixa de e-mail falsa para desenvolvimento. Nunca usar em produção.
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+volumes:
+  devdb:

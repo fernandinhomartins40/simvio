@@ -1,0 +1,506 @@
+// Simvio — modelo de dados.
+// Todo objeto de tenant carrega organizationId e é consultado sempre com esse filtro no servidor.
+// Segredos de alta entropia (chaves, credenciais, tokens) ficam somente como digest SHA-256.
+// Dados que precisam ser recuperados (envelope da sessão, telefone completo, segredos de webhook)
+// ficam cifrados com AES-256-GCM usando chave mestra externa ao banco.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  developer
+  viewer
+}
+
+enum Environment {
+  test
+  live
+}
+
+enum Purpose {
+  signup
+  verification
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  expired
+  cancelled
+  failed
+}
+
+enum DeviceStatus {
+  active
+  revoked
+}
+
+enum LineStatus {
+  pending_check
+  active
+  disabled
+}
+
+enum SubscriptionStatus {
+  active
+  suspended
+  cancelled
+}
+
+enum OutboxStatus {
+  pending
+  processing
+  done
+}
+
+enum DeliveryStatus {
+  pending
+  succeeded
+  failed
+}
+
+enum EmailTokenPurpose {
+  verify_email
+  reset_password
+}
+
+// ---------------------------------------------------------------------------
+// Contas e organizações
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  isSuperAdmin    Boolean   @default(false)
+  totpSecretEnc   String?
+  totpEnabledAt   DateTime?
+  totpLastStep    Int?
+  totpRecoveryDigests String[] @default([])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships Membership[]
+  sessions    WebSession[]
+  emailTokens EmailToken[]
+}
+
+model WebSession {
+  id            String    @id @default(cuid())
+  userId        String
+  tokenDigest   String    @unique
+  csrfToken     String
+  mfaVerifiedAt DateTime?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+  userAgent     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmailToken {
+  id          String            @id @default(cuid())
+  userId      String
+  purpose     EmailTokenPurpose
+  tokenDigest String            @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  // Suspensão administrativa (abuso, fraude, pedido do cliente); independente da cobrança.
+  suspendedAt     DateTime?
+  suspendedReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships    Membership[]
+  invitations    Invitation[]
+  applications   Application[]
+  apiKeys        ApiKey[]
+  devices        Device[]
+  receiverLines  ReceiverLine[]
+  pairings       PairingSession[]
+  verifications  Verification[]
+  deviceEvents   DeviceEvent[]
+  webhooks       WebhookEndpoint[]
+  outboxEvents   OutboxEvent[]
+  deliveries     WebhookDelivery[]
+  subscription   Subscription?
+  auditLogs      AuditLog[]
+  idempotency    IdempotencyRecord[]
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           Role
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Invitation {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String
+  role           Role
+  tokenDigest    String    @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Aplicações, ambientes e chaves
+
+model Application {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  name                String
+  // Nome exibido ao usuário final na página hospedada.
+  displayName         String
+  // Ambiente de produção habilitado (conta para o limite do plano).
+  liveEnabled         Boolean   @default(false)
+  allowedRedirectUrls String[]  @default([])
+  archivedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  apiKeys       ApiKey[]
+  verifications Verification[]
+  webhooks      WebhookEndpoint[]
+
+  // Permite FKs compostas que impedem associação cruzada entre organizações.
+  @@unique([id, organizationId])
+  @@index([organizationId])
+}
+
+model ApiKey {
+  id             String      @id @default(cuid())
+  organizationId String
+  applicationId  String
+  environment    Environment
+  name           String
+  // Prefixo exibível (ex.: "sk_test_AbC123"); nunca a chave inteira.
+  prefix         String
+  digest         String      @unique
+  createdById    String?
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application  Application  @relation(fields: [applicationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@index([organizationId, applicationId])
+}
+
+// ---------------------------------------------------------------------------
+// Aparelhos receptores
+
+model Device {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String
+  manufacturer     String?
+  model            String?
+  androidVersion   String?
+  appVersion       String?
+  credentialDigest String       @unique
+  status           DeviceStatus @default(active)
+  pairedById       String?
+  pairedAt         DateTime     @default(now())
+  revokedAt        DateTime?
+  lastSeenAt       DateTime?
+  // Último diagnóstico enviado pelo app: permissões, fila, otimização de bateria etc.
+  diagnostics      Json?
+  createdAt        DateTime     @default(now())
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  line          ReceiverLine?
+  verifications Verification[]
+  events        DeviceEvent[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId])
+}
+
+model ReceiverLine {
+  id                   String     @id @default(cuid())
+  organizationId       String
+  // MVP: uma linha receptora inequívoca por aparelho.
+  deviceId             String     @unique
+  phoneE164            String
+  // Assinatura (SIM) que recebeu o SMS de teste; eventos de outro SIM falham de forma segura.
+  subscriptionId       Int?
+  status               LineStatus @default(pending_check)
+  checkChallengeDigest String?    @unique
+  checkExpiresAt       DateTime?
+  verifiedAt           DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  device        Device         @relation(fields: [deviceId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  verifications Verification[]
+
+  @@unique([id, organizationId])
+  @@unique([deviceId, organizationId])
+  @@index([organizationId, status])
+}
+
+model PairingSession {
+  id             String    @id @default(cuid())
+  organizationId String
+  codeDigest     String    @unique
+  createdById    String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  deviceId       String?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Verificações
+
+model Verification {
+  id               String             @id @default(cuid())
+  organizationId   String
+  applicationId    String
+  environment      Environment
+  reference        String
+  purpose          Purpose
+  // Remetente esperado: HMAC para correspondência, cifrado para consulta autorizada, mascarado para histórico.
+  phoneDigest      String
+  phoneEnc         String?
+  phoneMasked      String
+  deviceId         String
+  receiverLineId   String
+  receiverPhone    String
+  challengeDigest  String?            @unique
+  publicTokenDigest String            @unique
+  // Envelope cifrado (token do desafio + token público) para repetição idempotente e página pública.
+  // Apagado ao chegar em estado terminal ou expirar.
+  envelopeEnc      String?
+  redirectUrl      String?
+  status           VerificationStatus @default(pending)
+  failureReason    String?
+  expiresAt        DateTime
+  verifiedAt       DateTime?
+  terminalAt       DateTime?
+  matchedEventId   String?            @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application  Application  @relation(fields: [applicationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  device       Device       @relation(fields: [deviceId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  receiverLine ReceiverLine @relation(fields: [receiverLineId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@index([organizationId, environment, status, createdAt])
+  @@index([applicationId, environment, reference])
+  @@index([status, expiresAt])
+  @@index([phoneDigest, createdAt])
+}
+
+model IdempotencyRecord {
+  id             String      @id @default(cuid())
+  organizationId String
+  applicationId  String
+  environment    Environment
+  key            String
+  requestHash    String
+  verificationId String
+  expiresAt      DateTime
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, applicationId, environment, key])
+  @@index([expiresAt])
+}
+
+model DeviceEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  deviceId       String
+  // Identificador estável gerado no aparelho; garante repetição idempotente.
+  eventId        String
+  outcome        String
+  verificationId String?
+  senderMasked   String?
+  smsReceivedAt  DateTime?
+  receivedAt     DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  device       Device       @relation(fields: [deviceId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([deviceId, eventId])
+  @@index([organizationId, receivedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Webhooks e outbox
+
+model WebhookEndpoint {
+  id             String      @id @default(cuid())
+  organizationId String
+  applicationId  String
+  environment    Environment
+  url            String
+  secretEnc      String
+  enabled        Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  application  Application       @relation(fields: [applicationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([organizationId, applicationId, environment])
+}
+
+model OutboxEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  applicationId  String
+  environment    Environment
+  type           String
+  verificationId String?
+  payload        Json
+  status         OutboxStatus @default(pending)
+  availableAt    DateTime     @default(now())
+  lockedAt       DateTime?
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([status, availableAt])
+  @@index([verificationId])
+}
+
+model WebhookDelivery {
+  id             String         @id @default(cuid())
+  organizationId String
+  outboxEventId  String
+  endpointId     String
+  status         DeliveryStatus @default(pending)
+  attemptCount   Int            @default(0)
+  nextAttemptAt  DateTime?      @default(now())
+  lockedAt       DateTime?
+  lastStatusCode Int?
+  lastError      String?
+  deliveredAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  outboxEvent  OutboxEvent      @relation(fields: [outboxEventId], references: [id], onDelete: Cascade)
+  endpoint     WebhookEndpoint  @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  attempts     WebhookAttempt[]
+
+  @@unique([outboxEventId, endpointId])
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, createdAt])
+}
+
+model WebhookAttempt {
+  id         String   @id @default(cuid())
+  deliveryId String
+  attemptNo  Int
+  statusCode Int?
+  error      String?
+  durationMs Int
+  createdAt  DateTime @default(now())
+
+  delivery WebhookDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+}
+
+// ---------------------------------------------------------------------------
+// Planos (gestão manual no piloto) e auditoria
+
+model Plan {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  name               String
+  priceCents         Int
+  maxLiveApplications Int
+  maxDevices         Int
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  organizationId String             @unique
+  planId         String
+  status         SubscriptionStatus @default(active)
+  notes          String?
+  currentPeriodEnd DateTime?
+  updatedById    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorType      String
+  actorId        String?
+  action         String
+  targetType     String?
+  targetId       String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([createdAt])
+}

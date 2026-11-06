@@ -1,0 +1,62 @@
+[
+  {
+    "arquivo": "hero-exemplo-paleta.png",
+    "referencia": "aplicacao-paleta",
+    "recorte_xyxy": [
+      532,
+      302,
+      1100,
+      626
+    ],
+    "sem_redimensionamento": true,
+    "pixels_preservados": true
+  },
+  {
+    "arquivo": "hero-landing-com-mao.png",
+    "referencia": "landing-desktop",
+    "recorte_xyxy": [
+      465,
+      80,
+      1024,
+      428
+    ],
+    "sem_redimensionamento": true,
+    "pixels_preservados": true
+  },
+  {
+    "arquivo": "grafismo-faixa-central.png",
+    "referencia": "landing-desktop",
+    "recorte_xyxy": [
+      790,
+      440,
+      1024,
+      580
+    ],
+    "sem_redimensionamento": true,
+    "pixels_preservados": true
+  },
+  {
+    "arquivo": "grafismo-rodape.png",
+    "referencia": "landing-desktop",
+    "recorte_xyxy": [
+      903,
+      1370,
+      1024,
+      1477
+    ],
+    "sem_redimensionamento": true,
+    "pixels_preservados": true
+  },
+  {
+    "arquivo": "previa-painel-na-landing.png",
+    "referencia": "landing-desktop",
+    "recorte_xyxy": [
+      562,
+      695,
+      1024,
+      972
+    ],
+    "sem_redimensionamento": true,
+    "pixels_preservados": true
+  }
+]

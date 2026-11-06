@@ -1,0 +1,143 @@
+# Simvio — produção/piloto em uma VPS compartilhada.
+# Único serviço com porta publicada: nginx (${SIMVIO_BIND_ADDRESS}:${SIMVIO_PORT}).
+# web (3000), api (3001) e db (5432) ficam só nas redes internas deste projeto.
+# Uso:  cp .env.example .env  (preencha)  &&  docker compose up -d --build
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-api-env: &api-env
+  NODE_ENV: production
+  API_PORT: "3001"
+  DATABASE_URL: postgresql://${POSTGRES_USER:-simvio}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-simvio}?schema=public
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?defina PUBLIC_BASE_URL no .env}
+  SIMVIO_ENCRYPTION_KEYS: ${SIMVIO_ENCRYPTION_KEYS:?defina SIMVIO_ENCRYPTION_KEYS no .env}
+  SIMVIO_HMAC_KEY: ${SIMVIO_HMAC_KEY:?defina SIMVIO_HMAC_KEY no .env}
+  VERIFICATION_TTL_SECONDS: ${VERIFICATION_TTL_SECONDS:-300}
+  PAIRING_TTL_SECONDS: ${PAIRING_TTL_SECONDS:-300}
+  LINE_CHECK_TTL_SECONDS: ${LINE_CHECK_TTL_SECONDS:-900}
+  DEVICE_DEGRADED_AFTER_SECONDS: ${DEVICE_DEGRADED_AFTER_SECONDS:-1200}
+  DEVICE_OFFLINE_AFTER_SECONDS: ${DEVICE_OFFLINE_AFTER_SECONDS:-3600}
+  SMTP_URL: ${SMTP_URL:-}
+  MAIL_FROM: ${MAIL_FROM:-Simvio <nao-responda@localhost>}
+  WEBHOOK_ALLOW_PRIVATE_TARGETS: "false"
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  nginx:
+    image: nginx:1.28-alpine
+    restart: unless-stopped
+    ports:
+      - "${SIMVIO_BIND_ADDRESS:-127.0.0.1}:${SIMVIO_PORT:-8080}:80"
+    environment:
+      NGINX_ENVSUBST_FILTER: "^SIMVIO_"
+      SIMVIO_TRUSTED_PROXIES: ${SIMVIO_TRUSTED_PROXIES:-172.16.0.0/12}
+    volumes:
+      - ./deploy/nginx/simvio.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks: [edge]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: simvio/web:local
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [edge]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: simvio/api:local
+    command: ["node", "/app/node_modules/prisma/build/index.js", "migrate", "deploy"]
+    restart: "no"
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+    logging: *logging
+
+  api:
+    image: simvio/api:local
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks: [edge, backend]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging: *logging
+
+  worker:
+    image: simvio/api:local
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # backend: banco; egress: saída para webhooks dos clientes e SMTP.
+    networks: [backend, egress]
+    logging: *logging
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-simvio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-simvio}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [backend]
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+networks:
+  # nginx <-> web/api. Saída para a internet (SMTP da API).
+  edge: {}
+  # Somente banco: sem rota para fora.
+  backend:
+    internal: true
+  # Saída do worker (webhooks) sem expor o banco.
+  egress: {}
+
+volumes:
+  db-data: {}

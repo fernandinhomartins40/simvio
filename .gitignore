@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+# Android
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+apps/android/local.properties
+apps/android/*.jks
+apps/android/keystore.properties
+*.keystore
+# backups
+backups/
+# PHP example
+examples/laravel/vendor/

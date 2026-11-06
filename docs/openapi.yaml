@@ -1,0 +1,521 @@
+openapi: 3.1.0
+info:
+  title: Simvio API de integração
+  version: 1.0.0
+  summary: Verificação de telefone por SMS reverso.
+  description: |
+    API usada pelo **backend** do integrador. A chave secreta (`sk_test_…` ou `sk_live_…`)
+    nunca deve ir para o navegador ou para o app do usuário final.
+
+    Fluxo resumido:
+    1. O backend cria uma verificação (`POST /v1/verifications`) com o celular informado pelo usuário.
+    2. O usuário é levado à `verification_url` (página hospedada) ou recebe `receiver_number` + `message_body`
+       e envia o SMS do próprio aplicativo de mensagens.
+    3. O aparelho receptor do integrador recebe o SMS e o encaminha à Simvio, que valida remetente,
+       desafio, receptor, organização, aplicação, ambiente, sessão e prazo.
+    4. O backend recebe o webhook `verification.verified` **e** confirma com `GET /v1/verifications/{id}`
+       antes de liberar o cadastro. A Simvio informa o resultado; quem decide é o backend integrado.
+
+    A Simvio **não envia SMS/OTP**. Não há cobrança por mensagem.
+
+    Erros seguem sempre o formato `{"error": {"code", "message", "details?"}}`.
+  license:
+    name: Proprietária
+    identifier: LicenseRef-Simvio
+servers:
+  - url: /api
+    description: Mesmo domínio do painel (Nginx encaminha `/api/` para a API removendo o prefixo `/api`).
+security:
+  - secretKey: []
+tags:
+  - name: Verificações
+    description: Criação e consulta de verificações (backend do integrador).
+  - name: Sessão pública
+    description: Estado mínimo usado pela página hospedada `/v/{token}`. Não exige chave.
+paths:
+  /v1/verifications:
+    post:
+      tags: [Verificações]
+      operationId: createVerification
+      summary: Criar verificação
+      description: |
+        Cria uma sessão de verificação para o celular informado. Uma nova verificação para a mesma
+        `reference` (mesma aplicação e ambiente) cancela a anterior ainda pendente (`failure_reason: superseded`).
+
+        Limite: 5 verificações por número a cada 15 minutos por aplicação; 120 requisições/minuto por IP.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVerificationRequest"
+            example:
+              phone_number: "+5511987654321"
+              reference: "cadastro_8421"
+              purpose: signup
+              redirect_url: "https://app.exemplo.com.br/cadastro/concluido"
+      responses:
+        "201":
+          description: Verificação criada.
+          headers:
+            Idempotent-Replayed:
+              $ref: "#/components/headers/IdempotentReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verification"
+        "200":
+          description: Repetição com a mesma `Idempotency-Key` e o mesmo corpo; devolve a verificação já criada.
+          headers:
+            Idempotent-Replayed:
+              $ref: "#/components/headers/IdempotentReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verification"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          $ref: "#/components/responses/PlanLimit"
+        "403":
+          $ref: "#/components/responses/Suspended"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ReceiverUnavailable"
+  /v1/verifications/{id}:
+    get:
+      tags: [Verificações]
+      operationId: getVerification
+      summary: Consultar verificação
+      description: |
+        Fonte da verdade do estado. Use antes de ativar o cadastro, mesmo após receber o webhook.
+        Uma verificação pendente cujo prazo venceu é devolvida como `expired`.
+      parameters:
+        - $ref: "#/components/parameters/VerificationId"
+      responses:
+        "200":
+          description: Verificação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verification"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /v1/verifications/{id}/cancel:
+    post:
+      tags: [Verificações]
+      operationId: cancelVerification
+      summary: Cancelar verificação pendente
+      description: "Cancela uma verificação ainda pendente e dentro do prazo (`failure_reason: cancelled_by_integrator`)."
+      parameters:
+        - $ref: "#/components/parameters/VerificationId"
+      responses:
+        "200":
+          description: Verificação cancelada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verification"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: A verificação já está em estado final (verificada, expirada, cancelada ou falha).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  code: conflict
+                  message: Verificação já está em estado final (verified).
+                  details: { status: verified }
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /v1/public/sessions/{token}:
+    get:
+      tags: [Sessão pública]
+      operationId: getPublicSession
+      summary: Estado público da sessão
+      description: |
+        Usado pela página hospedada. O token é o final da `verification_url` e funciona como segredo
+        de acesso à sessão: não registre em logs nem compartilhe. Resposta com `Cache-Control: no-store`,
+        `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex`. Limite: 60 requisições/minuto por IP.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{20,64}$"
+      responses:
+        "200":
+          description: Estado da sessão.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSession"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+webhooks:
+  verificationEvent:
+    post:
+      operationId: receiveVerificationEvent
+      summary: Aviso automático (webhook) de mudança de estado
+      description: |
+        Enviado para cada endpoint ativo da aplicação/ambiente quando uma verificação chega a um estado final.
+
+        **Assinatura.** `Simvio-Signature: v1=<hex>` em que
+        `hex = HMAC-SHA256(segredo_whsec, "<Simvio-Timestamp>.<Simvio-Event-Id>.<corpo_bruto>")`.
+        Calcule sobre o **corpo bruto** recebido (antes de interpretar o JSON), compare em tempo constante
+        e rejeite timestamps com diferença maior que 5 minutos.
+
+        **Entrega.** Pelo menos uma vez: o mesmo `event_id` pode chegar mais de uma vez — deduplique.
+        Responda 2xx em até 10 s. Redirecionamentos (3xx) não são seguidos e contam como falha.
+        Novas tentativas: imediata, 10 s, 1 min, 5 min, 30 min, 2 h e 6 h (7 no total). Depois disso a entrega
+        fica como falha e pode ser reenviada pelo painel.
+
+        **Confirmação.** O webhook avisa; antes de liberar o cadastro, confirme com `GET /v1/verifications/{id}`
+        que `status` é `verified` e que `reference` corresponde ao seu registro.
+      security: []
+      parameters:
+        - name: Simvio-Event-Id
+          in: header
+          required: true
+          schema: { type: string, pattern: "^evt_[a-f0-9]{32}$" }
+          description: Identificador estável do evento (igual em todas as tentativas e reenvios).
+        - name: Simvio-Event-Type
+          in: header
+          required: true
+          schema:
+            $ref: "#/components/schemas/WebhookEventType"
+        - name: Simvio-Timestamp
+          in: header
+          required: true
+          schema: { type: string, pattern: "^[0-9]+$" }
+          description: Segundos Unix do momento do envio desta tentativa.
+        - name: Simvio-Signature
+          in: header
+          required: true
+          schema: { type: string, pattern: "^v1=[a-f0-9]{64}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookEvent"
+            example:
+              event_id: evt_3f2a9c1e5b7d4a8f9e0c1b2a3d4e5f60
+              type: verification.verified
+              verification_id: cmh1x2y3z0000abcd1234efgh
+              application_id: cmh1a2b3c0000wxyz9876ijkl
+              environment: test
+              reference: cadastro_8421
+              status: verified
+              phone_masked: "+55 11 9****-4321"
+              occurred_at: "2026-11-03T12:00:00.000Z"
+      responses:
+        "200":
+          description: Recebido. Qualquer 2xx confirma a entrega.
+        "500":
+          description: Qualquer resposta fora de 2xx (ou falha de rede/tempo) agenda nova tentativa.
+components:
+  securitySchemes:
+    secretKey:
+      type: http
+      scheme: bearer
+      bearerFormat: "sk_test_… | sk_live_…"
+      description: |
+        Chave secreta da aplicação: `sk_test_` + 43 caracteres (ambiente de teste) ou `sk_live_` + 43
+        (produção). O ambiente da chave define o ambiente da verificação. Mostrada uma única vez no painel.
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        Obrigatório. Chave única por tentativa (ex.: id do cadastro + número da tentativa), até 200 caracteres.
+        Repetir com a mesma chave e o mesmo corpo devolve a mesma verificação (200).
+        Mesma chave com corpo diferente devolve 409 `conflict`. Guardada por 24 h.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    VerificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+  headers:
+    IdempotentReplayed:
+      description: "`true` quando a resposta é a repetição de uma criação anterior."
+      schema:
+        type: string
+        enum: ["true", "false"]
+  schemas:
+    VerificationStatus:
+      type: string
+      enum: [pending, verified, expired, cancelled, failed]
+      description: |
+        - `pending`: aguardando o SMS.
+        - `verified`: SMS correto recebido do número informado, dentro do prazo.
+        - `expired`: prazo venceu sem SMS válido.
+        - `cancelled`: cancelada pelo integrador ou substituída por nova verificação da mesma `reference`.
+        - `failed`: o receptor foi revogado ou teve o número trocado durante a sessão.
+    FailureReason:
+      type: [string, "null"]
+      enum: [superseded, cancelled_by_integrator, receiver_revoked, receiver_line_changed, null]
+    WebhookEventType:
+      type: string
+      enum: [verification.verified, verification.expired, verification.cancelled, verification.failed]
+    CreateVerificationRequest:
+      type: object
+      additionalProperties: false
+      required: [phone_number, reference]
+      properties:
+        phone_number:
+          type: string
+          minLength: 8
+          maxLength: 20
+          description: Celular brasileiro em E.164 (`+55` + DDD + 9 + 8 dígitos).
+          examples: ["+5511987654321"]
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Identificador do seu lado (cadastro, usuário, pedido). Volta no webhook.
+        purpose:
+          type: string
+          enum: [signup, verification]
+          default: verification
+        redirect_url:
+          type: string
+          format: uri
+          maxLength: 2000
+          description: |
+            Opcional. Para onde a página hospedada leva o usuário após verificar. Precisa estar
+            cadastrada na aplicação; voltar a essa URL não autoriza nada por si só.
+    Verification:
+      type: object
+      required:
+        - id
+        - object
+        - status
+        - purpose
+        - reference
+        - environment
+        - application_id
+        - phone_number
+        - phone_masked
+        - receiver_number
+        - message_body
+        - verification_url
+        - sms_uri
+        - expires_at
+        - verified_at
+        - failure_reason
+        - created_at
+      properties:
+        id: { type: string }
+        object: { type: string, const: verification }
+        status: { $ref: "#/components/schemas/VerificationStatus" }
+        purpose: { type: string, enum: [signup, verification] }
+        reference: { type: string }
+        environment: { type: string, enum: [test, live] }
+        application_id: { type: string }
+        phone_number:
+          type: [string, "null"]
+          description: Número informado (E.164). Apagado após o período de retenção (7 dias).
+        phone_masked: { type: string, examples: ["+55 11 9****-4321"] }
+        receiver_number:
+          type: string
+          description: Número do chip receptor para onde o usuário deve enviar o SMS.
+        message_body:
+          type: [string, "null"]
+          description: Texto exato do SMS (`SIMVIO <26 caracteres>`). `null` fora do estado pendente.
+        verification_url:
+          type: [string, "null"]
+          format: uri
+          description: Página hospedada para o usuário. `null` fora do estado pendente.
+        sms_uri:
+          type: [string, "null"]
+          description: Link `sms:` que abre o aplicativo de mensagens com número e texto preenchidos.
+        expires_at: { type: string, format: date-time }
+        verified_at: { type: [string, "null"], format: date-time }
+        failure_reason: { $ref: "#/components/schemas/FailureReason" }
+        created_at: { type: string, format: date-time }
+    PublicSession:
+      type: object
+      required:
+        - status
+        - hint
+        - application_name
+        - phone_hint
+        - receiver_number
+        - receiver_display
+        - message_body
+        - sms_uri
+        - expires_at
+        - server_time
+        - redirect_url
+      properties:
+        status: { $ref: "#/components/schemas/VerificationStatus" }
+        hint:
+          type: [string, "null"]
+          enum: [wrong_sender, null]
+          description: "`wrong_sender`: chegou o SMS com o código, mas de outro número (ex.: outro chip)."
+        application_name: { type: string }
+        phone_hint: { type: string }
+        receiver_number: { type: [string, "null"] }
+        receiver_display: { type: [string, "null"] }
+        message_body: { type: [string, "null"] }
+        sms_uri: { type: [string, "null"] }
+        expires_at: { type: string, format: date-time }
+        server_time: { type: string, format: date-time }
+        redirect_url:
+          type: [string, "null"]
+          format: uri
+          description: Presente apenas quando `status` é `verified`.
+    WebhookEvent:
+      type: object
+      required: [event_id, type, verification_id, application_id, environment, reference, status, phone_masked, occurred_at]
+      properties:
+        event_id: { type: string }
+        type: { $ref: "#/components/schemas/WebhookEventType" }
+        verification_id: { type: string }
+        application_id: { type: string }
+        environment: { type: string, enum: [test, live] }
+        reference: { type: string }
+        status: { $ref: "#/components/schemas/VerificationStatus" }
+        phone_masked: { type: string }
+        occurred_at: { type: string, format: date-time }
+    ErrorCode:
+      type: string
+      enum:
+        - invalid_request
+        - unauthorized
+        - forbidden
+        - not_found
+        - conflict
+        - expired
+        - plan_limit
+        - suspended
+        - rate_limited
+        - receiver_unavailable
+        - internal_error
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { $ref: "#/components/schemas/ErrorCode" }
+            message:
+              type: string
+              description: Mensagem em português para registro/diagnóstico. Decida pelo `code`.
+            details:
+              type: object
+              additionalProperties: true
+  responses:
+    InvalidRequest:
+      description: "Dados inválidos (ex.: telefone fora do formato, Idempotency-Key ausente, redirect_url não cadastrada)."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error:
+              code: invalid_request
+              message: "phone_number deve ser um celular brasileiro em E.164, ex.: +5511987654321."
+              details: { field: phone_number }
+    Unauthorized:
+      description: Chave ausente, inválida, revogada ou de aplicação arquivada.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: { code: unauthorized, message: Chave de API ausente ou inválida. }
+    PlanLimit:
+      description: Produção não habilitada para a aplicação ou não incluída no plano.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: { code: plan_limit, message: O ambiente de produção não está habilitado para esta aplicação. }
+    Suspended:
+      description: Assinatura da organização suspensa; novas verificações bloqueadas.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: { code: suspended, message: A assinatura desta organização está suspensa. Novas verificações estão bloqueadas. }
+    NotFound:
+      description: Não encontrado (inclui recursos de outra organização/aplicação/ambiente).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: { code: not_found, message: Verificação não encontrado. }
+    Conflict:
+      description: |
+        Mesma Idempotency-Key reutilizada com corpo diferente, ou reutilizada depois que a verificação
+        deixou de estar pendente (crie com uma nova chave).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Muitas requisições (por IP) ou muitas verificações para o mesmo número.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: { code: rate_limited, message: Muitas verificações para este número. Tente novamente em alguns minutos. }
+    ReceiverUnavailable:
+      description: Nenhum aparelho receptor ativo e comunicando nesta organização. Tente novamente depois.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error:
+              code: receiver_unavailable
+              message: Nenhum aparelho receptor disponível agora. Verifique se o Android está conectado e tente novamente.
+    InternalError:
+      description: Erro interno. É seguro repetir com a mesma Idempotency-Key.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

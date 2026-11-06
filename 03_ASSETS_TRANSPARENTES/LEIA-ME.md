@@ -1,0 +1,1 @@
+Os PNGs desta pasta são assets ilustrativos gerados com referência, com alpha. Logo e símbolo ficam em ../01_IDENTIDADE_VISUAL/. Não são recortes de tela. Não tratá-los como extrações pixel a pixel dos mockups; usar componentes reais para conteúdo funcional. Não distorcer a marca para encaixar nas ilustrações.

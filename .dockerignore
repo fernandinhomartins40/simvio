@@ -1,0 +1,24 @@
+# Contexto mínimo para as imagens. Nada de segredos, dependências locais ou material de marca bruto.
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+**/*.log
+**/.env
+**/.env.*
+!.env.example
+.git
+.github
+apps/android
+examples/**
+!examples/node/package.json
+backups
+docs
+deploy
+01_IDENTIDADE_VISUAL
+02_TELAS_REFERENCIA
+03_ASSETS_TRANSPARENTES
+04_DOCUMENTACAO
+99_HISTORICO_NAO_IMPLEMENTAR
+*.md
+compose*.yaml

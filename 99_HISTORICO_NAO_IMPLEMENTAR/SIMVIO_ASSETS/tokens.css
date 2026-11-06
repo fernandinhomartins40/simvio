@@ -1,0 +1,11 @@
+:root {
+  --simvio-petroleo: #073e42;
+  --simvio-lima: #c6f36a;
+  --simvio-mineral: #f3f7f3;
+  --simvio-superficie: #ffffff;
+  --simvio-texto: #073e42;
+  --simvio-acao-fundo: #c6f36a;
+  --simvio-acao-texto: #073e42;
+}
+/* Marca: usar o arquivo fiel aprovado; não desenhar aproximações em CSS. */
+.simvio-logo { display: block; max-width: 100%; height: auto; object-fit: contain; }

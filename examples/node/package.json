@@ -1,0 +1,11 @@
+{
+  "name": "@simvio/example-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Exemplo de backend integrado à Simvio (Node.js 18+, sem dependências).",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  }
+}

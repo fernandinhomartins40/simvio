@@ -1,0 +1,15 @@
+{
+  "signups": {
+    "6d327691-7e7f-499f-985b-5b83daf0af3f": {
+      "id": "6d327691-7e7f-499f-985b-5b83daf0af3f",
+      "phone": "+5511977776666",
+      "status": "active",
+      "attempts": 1,
+      "verificationId": "cmvvwgpu6000gcbz8ebvx1li7",
+      "activatedAt": "2026-10-31T04:27:34.387Z"
+    }
+  },
+  "processedEvents": {
+    "evt_84b1a3af76dc43f3839aa189357fdc4e": "2026-10-31T04:27:34.390Z"
+  }
+}

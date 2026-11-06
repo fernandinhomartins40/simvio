@@ -1,0 +1,627 @@
+[
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/01-simbolo-branco-lima.png",
+    "bytes": 108365,
+    "sha256": "34b917da337d0b7a39922b76d10730c80499bd47c30d9f2285d32c817bc45603",
+    "largura": 1735,
+    "altura": 906
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/02-logo-branco-lima.png",
+    "bytes": 103548,
+    "sha256": "64dbbef2160305cee013f4c75d789e394949783d6c017fda723fda54c754e6f4",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/03-logo-branca.png",
+    "bytes": 89795,
+    "sha256": "ea9fb0b4d6a2c992c251ec02b62dbde0782554edcbed4c42ef1383c362e73424",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/04-logo-petroleo.png",
+    "bytes": 89980,
+    "sha256": "453a5211fd1d77cc075cbbb852d43b4f41673e04d312e79576f696a36497f9a8",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/05-logo-preta.png",
+    "bytes": 88627,
+    "sha256": "010e94b5b4a410925e328446c68de2bc78c3fe0198a35c725965892710fb2d6b",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/06-logo-cinza.png",
+    "bytes": 90744,
+    "sha256": "ca70b9b1f80e24745a23ff68db2eebd0e95e813565f1406d21a56f09b22d6738",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/07-logo-petroleo-lima-original.png",
+    "bytes": 341056,
+    "sha256": "eb9ff6b222f45c0c5dfa070e4de43c63da48d622313493e111399e0d2c410565",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/08-simbolo-petroleo-lima-original.png",
+    "bytes": 367581,
+    "sha256": "6bc73ce4b14da57ce3e33220ad68b9439dc5d250690d43531ee5dd4a46a2ab64",
+    "largura": 1735,
+    "altura": 906
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/previas-fundo-petroleo/01-simbolo-branco-lima.png",
+    "bytes": 113457,
+    "sha256": "6af1de264a6999dc9b5b3a9c06f0b5a7ba81e31efc415d2fb5519209bc04f702",
+    "largura": 1735,
+    "altura": 906
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/previas-fundo-petroleo/02-logo-branco-lima.png",
+    "bytes": 124749,
+    "sha256": "7c539aaa25bb4f590b99d515278b51cc699870144e26fdb5c54e8bd943a236f3",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "01_IDENTIDADE_VISUAL/referencia-paleta-escolhida.png",
+    "bytes": 1487241,
+    "sha256": "a099ae5d822c373e88104b34548390ac91e79504c02bd5549dcf142a3cd9cd4c",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/01-landing-desktop.png",
+    "bytes": 1642152,
+    "sha256": "b7ef9283a8f86dc0396531e7041363ecb7be849955e398a2fcb3ca28745304c7",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/02-landing-mobile.png",
+    "bytes": 1558393,
+    "sha256": "013cca335ec03fefa6e33ddbb33cc67fdb30e21cce395049f6825eead419a540",
+    "largura": 843,
+    "altura": 1866
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/03-landing-tablet.png",
+    "bytes": 1543047,
+    "sha256": "1719140bb45c07cbf505f721d04edf0f88e0ff0f4fcc7b50b9fc7c81af30b237",
+    "largura": 1086,
+    "altura": 1448
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/05-planos.png",
+    "bytes": 1535124,
+    "sha256": "7a5f5a9ea1f891cfb1ed0ec5e31f5fcea43195dc0627cd16e942aa3f324eaa9b",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/07-primeiros-passos.png",
+    "bytes": 1488241,
+    "sha256": "3ed58bcd6200436c680230855008e0cbe3a34db3cc387069a0846c0e50633ece",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/08-inicio.png",
+    "bytes": 1439594,
+    "sha256": "e061e9ba3917e9b7425c37291a901e9ffdfcb5d5e60334f5e9379979d86e5fe9",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/09-aplicacoes.png",
+    "bytes": 1348528,
+    "sha256": "814549e7d41717abeb731675636336cff6540be45cc816fe2211c7e65b62ebff",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/10-integracao.png",
+    "bytes": 1572529,
+    "sha256": "5be0bc818b85327327830254b89e38144825e1d6351aff02cb84de2e315265a9",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/11-aparelhos.png",
+    "bytes": 1367248,
+    "sha256": "6f89b5ae3d1296ef1d557ecd03e19d471c45258a31121d3c6c8893ec86496a61",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/13-verificacoes.png",
+    "bytes": 1481157,
+    "sha256": "31d821972665959032f312da32ca7e13d176da445b3f457c8b1982495835c172",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/14-avisos-automaticos.png",
+    "bytes": 1561062,
+    "sha256": "95ee15e11dfc5d09a17c4f2e41f8207ba56d77b802ab46d4ea1def83b047527a",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/15-equipe.png",
+    "bytes": 1367321,
+    "sha256": "672c534aae3aa2a9d115b039bd117f29cc93662ef1d1064cb77f434db572ba47",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/16-assinatura.png",
+    "bytes": 1487531,
+    "sha256": "2906eceef2c590164733376ebccee21e8a9133ec2464539038a43cd7528c0ffa",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/19-usuario-verificar-numero.png",
+    "bytes": 1485797,
+    "sha256": "bacb630d2ee133b078839be8ff87f0536c4deb239040f27467a6a01f6967fc05",
+    "largura": 1774,
+    "altura": 887
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/20-usuario-recuperacao.png",
+    "bytes": 1512555,
+    "sha256": "30404c4984b4bf5d683c6cfb07905e65395c3d1a801bc743c2bd2d6064548fcc",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "02_TELAS_REFERENCIA/22-android-teste-inicio-atividade.png",
+    "bytes": 1583713,
+    "sha256": "741be7d95366bd2151b7ccea0166284dcc975ef62d8c8baf7cfb19c87de99655",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/01-celular-emissor-com-mao.png",
+    "bytes": 1239700,
+    "sha256": "c85efad51c8d18edf8da7c49b57d5cd04388bac3cc204fb889afbd1baf5faab3",
+    "largura": 1208,
+    "altura": 1302
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/02-android-receptor.png",
+    "bytes": 1201036,
+    "sha256": "46f8739c8f343f105e6c27e256d62c5f6373f0844180871681b2393bfe656756",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/03-card-sms-recebido.png",
+    "bytes": 887687,
+    "sha256": "81b42556688dd9bd90dde5934ec5527926de6d95e8fe8b20b6090559066e73c5",
+    "largura": 1983,
+    "altura": 793
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/04-card-numero-confirmado.png",
+    "bytes": 664829,
+    "sha256": "2bcb34d46f2eed4dd9529a8091cf0a5c4b353f854acb317299829533049d043c",
+    "largura": 1672,
+    "altura": 941
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/07-faixa-lima-hero.png",
+    "bytes": 654676,
+    "sha256": "3d31d2eb460e5b39477e7635a63b434e8d03fc9b382a2b11e44442df161b529e",
+    "largura": 1774,
+    "altura": 887
+  },
+  {
+    "arquivo": "03_ASSETS_TRANSPARENTES/LEIA-ME.md",
+    "bytes": 324,
+    "sha256": "0ecaad275542b734f929f8c13f5f12c8c06ace15c821c3cdebbb41006a6e5e49"
+  },
+  {
+    "arquivo": "04_DOCUMENTACAO/COBERTURA_E_CORRECOES.md",
+    "bytes": 2594,
+    "sha256": "46879778bff10362d1550286497d8ca94c5f0ce5cd880c2a8c28229e5364804c"
+  },
+  {
+    "arquivo": "04_DOCUMENTACAO/IDENTIDADE_E_USO.md",
+    "bytes": 1558,
+    "sha256": "3501dc15907927829efde2d6e3496112bcf0df189dc7a222f4d3fe6a820d131c"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/LEIA-ME.md",
+    "bytes": 2772,
+    "sha256": "dab109d3c9b2503bf48a0860e2d7ec6e917d1512fbad9ea1c4e11f138b503279"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/fundos/fundo-desktop.png",
+    "bytes": 1187623,
+    "sha256": "5846ed251b43c9e69851f548bebc51685a370ac3365c4fa21d5eb72ce1e97f6e",
+    "largura": 1672,
+    "altura": 941
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/fundos/fundo-mobile.png",
+    "bytes": 1170659,
+    "sha256": "2dfd563dd176206d495203db8b8df32005e2b44e7b9f53b26c9106fd1acca7f0",
+    "largura": 941,
+    "altura": 1672
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/ilustracoes/estado-vazio-conectar.png",
+    "bytes": 1285990,
+    "sha256": "676408a73838951d66518178b5827c0fd9e99e876a20e212dcde630e13ec3420",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/ilustracoes/hero-android-receptor.png",
+    "bytes": 1260330,
+    "sha256": "a13c0a4b958eb8e842c62a8c41629e1cec8fc704bb5d206092546e407ede0bfb",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/ilustracoes/hero-celular-emissor.png",
+    "bytes": 1310833,
+    "sha256": "6bf331e6db3afc7e1f2b63b5190ca8a63fbc8604bcb6b0c97edac4d03e23b366",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/ilustracoes/hero-confirmacao.png",
+    "bytes": 1118119,
+    "sha256": "386314403a96df5bd97ec3b583179d86efe82119dd2c004520edf4d75e99f98e",
+    "largura": 1366,
+    "altura": 1152
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/manifesto.json",
+    "bytes": 2296,
+    "sha256": "c8d9d4926de06edfefbe3a2d790b47847667141330f91cd5e8c4111ccdec95ab"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/marca/logo-aprovada-original-intacta.png",
+    "bytes": 1070837,
+    "sha256": "c843ab71579701904abe578f882b3761523df8975fb745af8d0c40421a282303",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/marca/referencia-paleta-petroleo-lima.png",
+    "bytes": 1487241,
+    "sha256": "a099ae5d822c373e88104b34548390ac91e79504c02bd5549dcf142a3cd9cd4c",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_ASSETS/tokens.css",
+    "bytes": 383,
+    "sha256": "f2874f9b46248cd62715fb820ed8663392fe9bddfa59b1718366b0efc45a3f0f"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/LEIA-ME.md",
+    "bytes": 1943,
+    "sha256": "787d063fbfbdd7858ab2a95b1ef76401f919afadfd1c73674b94ea1df1174ddb"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/MANIFESTO.json",
+    "bytes": 1144,
+    "sha256": "1fc5706f662fa5f3e7c94269b5a34f81ea5536a80a326b935086a038e985e90c"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/aplicacao-paleta-referencia-integral.png",
+    "bytes": 1487241,
+    "sha256": "a099ae5d822c373e88104b34548390ac91e79504c02bd5549dcf142a3cd9cd4c",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/grafismo-faixa-central.png",
+    "bytes": 30089,
+    "sha256": "17deb65279edf9dd9c3e6b6b2f93a48f86d6361e6f3024627394604c0d6129b8",
+    "largura": 234,
+    "altura": 140
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/grafismo-rodape.png",
+    "bytes": 14405,
+    "sha256": "9e238e189c0dbb5bcc9a8dd2584f6e01ea65eb5dc5052c6755819aaa7a066b01",
+    "largura": 121,
+    "altura": 107
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/hero-exemplo-paleta.png",
+    "bytes": 159814,
+    "sha256": "3a1a7cbc1306a0950084e36925032107714d6bdc21fef5b9e9c517dd1eef773c",
+    "largura": 568,
+    "altura": 324
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/hero-landing-com-mao.png",
+    "bytes": 201284,
+    "sha256": "f9db6b1324aad04e1bcd90f1c5c2080d7a4eba906f9c7d2c042f2211a41d7e49",
+    "largura": 559,
+    "altura": 348
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/landing-desktop-referencia-integral.png",
+    "bytes": 1642152,
+    "sha256": "b7ef9283a8f86dc0396531e7041363ecb7be849955e398a2fcb3ca28745304c7",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/logo-master-aprovada-intacta.png",
+    "bytes": 1070837,
+    "sha256": "c843ab71579701904abe578f882b3761523df8975fb745af8d0c40421a282303",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/SIMVIO_RECORTES_FIEIS/previa-painel-na-landing.png",
+    "bytes": 102988,
+    "sha256": "3d73fe326f3dd573ff3d19223303638803808dfb11f0415c07406a540b7bd57c",
+    "largura": 462,
+    "altura": 277
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/documentos/SIMVIO_PRD_v1.0.md",
+    "bytes": 33124,
+    "sha256": "06fd28eedee0dbbfe9628ddb25a42039126a4266731ee20d97658ed6d163e4d0"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/documentos/SIMVIO_PROMPT_ANTERIOR.md",
+    "bytes": 9493,
+    "sha256": "873a38f76272368f4a9f37aff4f38efccbf715329ec95c46085f8b29df1e8400"
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-021fe492-b307-466d-90f4-caad4b4c22a5.png",
+    "bytes": 190111,
+    "sha256": "ec31ba8a02ab04fce9264c4cb4c7e17ad0151d0aed83b807db0983c8a44539da",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-029d0bbf-2627-4d71-9175-88a22ae0f182.png",
+    "bytes": 410490,
+    "sha256": "f03424f78ab6272ccf43a95500341eef8649323413cc4bc3a49460588e52e008",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-0e886c6c-1dfb-4ff9-b0fe-bd948f6660e4.png",
+    "bytes": 364602,
+    "sha256": "33a3f732144ed8a84f31231365e596542cb2156b8705740c9bcbdd8dff734f9d",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-142628dd-7b96-434e-8f6c-0537705642b3.png",
+    "bytes": 1140790,
+    "sha256": "a66e6b5b3ca5982dc59158fdba73d8aaeba7e35ec101233b0d292ae4c0207624",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-150fff4e-8ef2-4e88-96c6-801eea765239.png",
+    "bytes": 345012,
+    "sha256": "81dd43bc288899daede1d4eb6cae43e8e430f9c936db8b2063338cdbb710c187",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-16f6264e-d47a-447b-8671-3a1d3d775bf6.png",
+    "bytes": 349426,
+    "sha256": "36126d0c6b086c0f6cf6656d58ce7f1cb1139ff7472d121659abdea30bd83e36",
+    "largura": 1735,
+    "altura": 906
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-18bf0057-ed50-4089-bb89-351205063554.png",
+    "bytes": 1187623,
+    "sha256": "5846ed251b43c9e69851f548bebc51685a370ac3365c4fa21d5eb72ce1e97f6e",
+    "largura": 1672,
+    "altura": 941
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-306e739c-8993-4cb8-bbe6-a270325bbde1.png",
+    "bytes": 339284,
+    "sha256": "b9862e648c0229fc6e136a47d4cc675be5141f8c127cd8d4b595d3b4a41347ef",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-3efd00e4-9344-4c32-a3e7-3e3b239c821e.png",
+    "bytes": 506054,
+    "sha256": "eea334c8ac4c09cfe0e3b4eed853f9421ed9674d27683ddcc02083753bf268a0",
+    "largura": 2170,
+    "altura": 725
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-4eaab94a-adcb-4c98-b058-17becc97de9b.png",
+    "bytes": 1102157,
+    "sha256": "1aab38f95dd7cef10d32f8bfcb6886721b8c945a6333194d181af74bc858a243",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-58df40bd-5e16-41a6-bcfb-d7516af8cd83.png",
+    "bytes": 345299,
+    "sha256": "0227afd17705f44891f8bfb6c82fc4fa67f1d3925f5dffa3789558c28b77d3ab",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-648ba4c8-562a-4edd-8b29-d7147f8b3e96.png",
+    "bytes": 543315,
+    "sha256": "31c9cd2c456d2619305fc3731c94917023d4fb32670f8b6ee1017fad50531a68",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-64e59efc-c25d-489f-9a07-3c5e23450525.png",
+    "bytes": 362048,
+    "sha256": "715c64b16e423793bf523763034a985e9c7abc39f5ffd73e2806d2a74c4d7729",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-70ca0339-0d55-44b6-8452-6a00c97e04fb.png",
+    "bytes": 1150607,
+    "sha256": "ca887eac9521b255101c8d2d302434cc98c6cd58fc27279d940c6ef3b028f32d",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-73ef48e2-be93-4056-9b77-7b407ece5e12.png",
+    "bytes": 1444324,
+    "sha256": "65cb85c6c4fd1ea935bbe49eb244d12912d9607b49c732aa1c5b17753b684b3e",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-7cef084f-616a-43d8-8096-ad47d3d7bf9a.png",
+    "bytes": 1260330,
+    "sha256": "a13c0a4b958eb8e842c62a8c41629e1cec8fc704bb5d206092546e407ede0bfb",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-80e136d8-df28-4ef6-ab00-541c9371f9d1.png",
+    "bytes": 1432219,
+    "sha256": "a36c67599e31895cee38d1951fccfcf63f184616e8dfa12138c3317c6f67574b",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-89cf08ae-75e1-4189-874c-692e776e2595.png",
+    "bytes": 1170659,
+    "sha256": "2dfd563dd176206d495203db8b8df32005e2b44e7b9f53b26c9106fd1acca7f0",
+    "largura": 941,
+    "altura": 1672
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-90881220-c2a0-4b50-98ab-1310b5e87875.png",
+    "bytes": 1310833,
+    "sha256": "6bf331e6db3afc7e1f2b63b5190ca8a63fbc8604bcb6b0c97edac4d03e23b366",
+    "largura": 1024,
+    "altura": 1536
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-9a29ae0e-9d44-4966-a72f-4f2dc6dae0f7.png",
+    "bytes": 380500,
+    "sha256": "86501661784c83d367d2a7eab35a0c9efde23a56ce89fcac65263abf8cc4fa22",
+    "largura": 2079,
+    "altura": 756
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-a253efb3-8e58-432c-99cb-c3fd2d38e752.png",
+    "bytes": 1070837,
+    "sha256": "c843ab71579701904abe578f882b3761523df8975fb745af8d0c40421a282303",
+    "largura": 1944,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-a7d1d360-e0c3-4f61-8ddc-e000c7269801.png",
+    "bytes": 212423,
+    "sha256": "8aa828ed912eb29891b1f67b5a2725bcebd33af22d6f640bdea9838ff9c66bbd",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-af650022-ae43-4f1f-923f-502c2c8de003.png",
+    "bytes": 528629,
+    "sha256": "708daee97d182dda7a9f259288c0884a0a18e3b76c8d767ccd515a33d51f5eb8",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-b1a3c44c-859a-453d-a5bd-a67d9c8254ce.png",
+    "bytes": 1125952,
+    "sha256": "9d158bee02f8e2e57a88e485ee9ea9eb7a71ceae7f325debbc61a2eb58fb04b7",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-ce3ac99f-7a58-4a1f-b037-903e27705c85.png",
+    "bytes": 1118119,
+    "sha256": "386314403a96df5bd97ec3b583179d86efe82119dd2c004520edf4d75e99f98e",
+    "largura": 1366,
+    "altura": 1152
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-d340864d-5b2a-47bc-bf31-19f276318404.png",
+    "bytes": 348533,
+    "sha256": "53d01b47de076764e85a53df45f746d6c481e57e77cbedf689c6c8f187c072ee",
+    "largura": 1735,
+    "altura": 906
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-d3de146c-7de4-4bfc-aa98-7b78fbc3e93b.png",
+    "bytes": 583486,
+    "sha256": "ae597b0d45efa170c9fd9a31fc9ae048db5c99a879653d5f17d71bc0ae1be699",
+    "largura": 2172,
+    "altura": 724
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-d65fc784-c805-4a5b-a9b1-4111c9bcd96c.png",
+    "bytes": 1158244,
+    "sha256": "17a3ec7a89df0fd1b2e04ff020f7e454009bf003647247007d0c2ba4d4bc5daf",
+    "largura": 1942,
+    "altura": 809
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-e7ee9d45-944a-4b9a-9714-b628bcab64c6.png",
+    "bytes": 1545383,
+    "sha256": "aec5a67a876da4167620f40329c5d5781b92b6887a441d953354be19a3d5ff11",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-ea7112ad-1315-420b-b017-e4666f22bd19.png",
+    "bytes": 1285990,
+    "sha256": "676408a73838951d66518178b5827c0fd9e99e876a20e212dcde630e13ec3420",
+    "largura": 1536,
+    "altura": 1024
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-f13a41eb-a120-4508-897f-6881a359a6e4.png",
+    "bytes": 402493,
+    "sha256": "6b839817f399a326f1799db73dc3deabfee6847e61422a9a24ed18a5e84c7354",
+    "largura": 1736,
+    "altura": 906
+  },
+  {
+    "arquivo": "99_HISTORICO_NAO_IMPLEMENTAR/imagens/exec-f2565d2a-3c47-49da-9c0e-846e785b924f.png",
+    "bytes": 1135679,
+    "sha256": "af2ada2d3411061969fef8a8e78c8f6af0ac0d4504aa150c1221554255258837",
+    "largura": 2079,
+    "altura": 756
+  },
+  {
+    "arquivo": "LEIA-ME_PRIMEIRO.md",
+    "bytes": 1300,
+    "sha256": "fee896ce36c47d269b4e3c2f107c13813a6d3b4018e65af4abfa9d6e47d89136"
+  },
+  {
+    "arquivo": "PROMPT_IMPLEMENTACAO_CLAUDE.md",
+    "bytes": 4254,
+    "sha256": "ddb3ade48f62551133369da01e7fa86c54b9aaa031ffd681e43ab0f4a122e1de"
+  },
+  {
+    "arquivo": "SIMVIO_PRD.md",
+    "bytes": 35047,
+    "sha256": "3866ef6ca6dea5721d2b1700b607645818142d29e9334e58ba22de5172ec4cee"
+  }
+]

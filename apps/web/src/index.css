@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+/* Paleta oficial (PRD §20). Texto escuro sobre lima; nunca lima pequena sobre branco. */
+@theme {
+  --color-petroleo: #073e42;
+  --color-petroleo-700: #0b4f54;
+  --color-petroleo-soft: #3d6467;
+  --color-lima: #c6f36a;
+  --color-lima-600: #a9d94a;
+  --color-mineral: #f3f7f3;
+  --color-linha: #dde7e2;
+  --color-sucesso: #1f8a4c;
+  --color-alerta: #b45309;
+  --color-erro: #b42318;
+  --color-info: #1d4ed8;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-mineral font-sans text-petroleo antialiased;
+  }
+  :focus-visible {
+    @apply outline-3 outline-offset-2 outline-petroleo;
+  }
+}
