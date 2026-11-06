@@ -1,0 +1,11 @@
+# Só para desenvolvimento/teste local: acrescenta o build das imagens ao compose.yaml.
+# Nunca usar na VPS (lá as imagens vêm prontas do GHCR).
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile

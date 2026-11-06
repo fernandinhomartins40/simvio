@@ -41,6 +41,7 @@
 | Exemplo PHP puro + Laravel (`examples/php`) | ✅ | ✅ `php -l` (PHP 8.3) | ✅ 14 checagens: assinatura idêntica aos vetores gerados pela API Node, rejeições | ❌ não rodado num projeto Laravel real |
 | Backup/restore criptografado (`scripts/backup.sh`, `scripts/restore.sh`) | ✅ | ✅ | ✅ executado contra o banco de dev (ver abaixo) | — |
 | Conferência pós-implantação `scripts/smoke.mjs` (básico + `--full` com aparelho simulado e conferência de assinatura do webhook) | ✅ | — | ✅ 04/11/2026: pilha `compose.yaml` isolada (porta 18090) — básico 13/13 e `--full` 18/18 pelo Nginx, logs sem segredos/telefones/tokens; webhook assinado conferido contra API dev (produção bloqueia destino local), caso negativo (segredo errado) acusa falha | ⏳ |
+| Deploy GitHub Actions → GHCR → VPS (`deploy.yml`, `vps-deploy.sh`), limites de memória/CPU, DNS e HTTPS de simvio.com.br | ✅ | — | ver execução em Actions | ⏳ |
 | Docker Compose de produção, Dockerfiles, Nginx de borda + vhost central de exemplo | ✅ | ✅ `docker compose config` + build das imagens | ✅ pilha isolada na porta 18080: healthz/readyz, SPA, 404/401, logs sem tokens, só uma porta publicada | ❌ HTTPS real/VPS não testados |
 | Guias: `docs/DEPLOY.md`, `docs/OPERACAO.md`, `docs/PROVA_TECNICA.md`, `docs/ANDROID.md` | ✅ | — | — | — |
 

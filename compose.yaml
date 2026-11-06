@@ -1,18 +1,20 @@
 # Simvio — produção/piloto em uma VPS compartilhada.
 # Único serviço com porta publicada: nginx (${SIMVIO_BIND_ADDRESS}:${SIMVIO_PORT}).
 # web (3000), api (3001) e db (5432) ficam só nas redes internas deste projeto.
-# Uso:  cp .env.example .env  (preencha)  &&  docker compose up -d --build
+# A VPS nunca compila: as imagens vêm prontas do GHCR, publicadas pelo GitHub Actions (.github/workflows/deploy.yml).
+# RELEASE fixa a versão (SHA do commit). Build local só com:  docker compose -f compose.yaml -f compose.build.yaml build
+# Limites de memória/CPU protegem as demais aplicações da VPS.
 
 x-logging: &logging
   driver: json-file
   options:
-    max-size: "10m"
-    max-file: "5"
+    max-size: "5m"
+    max-file: "3"
 
 x-api-env: &api-env
   NODE_ENV: production
   API_PORT: "3001"
-  DATABASE_URL: postgresql://${POSTGRES_USER:-simvio}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-simvio}?schema=public
+  DATABASE_URL: postgresql://${POSTGRES_USER:-simvio}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@db:5432/${POSTGRES_DB:-simvio}?schema=public&connection_limit=5
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?defina PUBLIC_BASE_URL no .env}
   SIMVIO_ENCRYPTION_KEYS: ${SIMVIO_ENCRYPTION_KEYS:?defina SIMVIO_ENCRYPTION_KEYS no .env}
   SIMVIO_HMAC_KEY: ${SIMVIO_HMAC_KEY:?defina SIMVIO_HMAC_KEY no .env}
@@ -30,6 +32,8 @@ services:
   nginx:
     image: nginx:1.28-alpine
     restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.5
     ports:
       - "${SIMVIO_BIND_ADDRESS:-127.0.0.1}:${SIMVIO_PORT:-8080}:80"
     environment:
@@ -51,11 +55,10 @@ services:
     logging: *logging
 
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    image: simvio/web:local
+    image: ${SIMVIO_REGISTRY:-ghcr.io/fernandinhomartins40}/simvio-web:${RELEASE:-latest}
     restart: unless-stopped
+    mem_limit: 48m
+    cpus: 0.25
     read_only: true
     tmpfs: [/tmp]
     networks: [edge]
@@ -67,12 +70,11 @@ services:
     logging: *logging
 
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    image: simvio/api:local
+    image: ${SIMVIO_REGISTRY:-ghcr.io/fernandinhomartins40}/simvio-api:${RELEASE:-latest}
     command: ["node", "/app/node_modules/prisma/build/index.js", "migrate", "deploy"]
     restart: "no"
+    mem_limit: 256m
+    cpus: 0.5
     environment: *api-env
     depends_on:
       db:
@@ -81,11 +83,16 @@ services:
     logging: *logging
 
   api:
-    image: simvio/api:local
+    image: ${SIMVIO_REGISTRY:-ghcr.io/fernandinhomartins40}/simvio-api:${RELEASE:-latest}
     restart: unless-stopped
+    # Heap + motor do Prisma + scrypt do login (32 MB por senha em paralelo).
+    mem_limit: 448m
+    cpus: 1.0
     read_only: true
     tmpfs: [/tmp]
-    environment: *api-env
+    environment:
+      <<: *api-env
+      NODE_OPTIONS: --max-old-space-size=160
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -99,12 +106,16 @@ services:
     logging: *logging
 
   worker:
-    image: simvio/api:local
+    image: ${SIMVIO_REGISTRY:-ghcr.io/fernandinhomartins40}/simvio-api:${RELEASE:-latest}
     command: ["node", "dist/worker.js"]
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
     read_only: true
     tmpfs: [/tmp]
-    environment: *api-env
+    environment:
+      <<: *api-env
+      NODE_OPTIONS: --max-old-space-size=128
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -115,6 +126,23 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    mem_limit: 384m
+    cpus: 1.0
+    # Ajustado ao limite de memória acima; poucas conexões (API e worker usam até 5 cada).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - effective_cache_size=192MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=30
+      - -c
+      - max_wal_size=256MB
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-simvio}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
@@ -122,7 +150,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     networks: [backend]
-    shm_size: 128mb
+    shm_size: 128m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s

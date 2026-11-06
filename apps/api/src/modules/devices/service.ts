@@ -286,8 +286,9 @@ export async function processDeviceEvent(device: Device, input: DeviceEventInput
         verificationId = v.id;
         if (!line || line.id !== v.receiverLineId || line.status !== "active") {
           outcome = "rejected_unknown";
-        } else if (line.subscriptionId !== null && line.subscriptionId !== (input.subscription_id ?? null)) {
+        } else if (line.subscriptionId !== (input.subscription_id ?? null)) {
           // SIM receptor ambíguo/diferente do validado: falha segura, sem aprovar.
+          // shortcut: sem índice no teste e no evento não dá para distinguir chips; exigiria sim_count (READ_PHONE_STATE) no app.
           outcome = "rejected_receiver_sim";
         } else if (v.status !== "pending") {
           outcome = "rejected_not_pending";

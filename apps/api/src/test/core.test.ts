@@ -334,6 +334,17 @@ describe("pareamento e linha receptora", () => {
     expect((await send(1, "sim-right-1")).json().outcome).toBe("verified");
   });
 
+  it("linha validada sem índice de SIM não aceita SMS que informa um chip", async () => {
+    const res = await app.inject({ method: "POST", url: "/v1/devices/line", headers: { authorization: A.device.auth }, payload: { phone_number: nextPhone() } });
+    const check = await sendEvent(A.device.auth, nextPhone(), tokenFromMessage(res.json().message_body));
+    expect(check.body.outcome).toBe("line_verified");
+    const { body, phone } = await create(A);
+    const send = (sub: number | undefined, id: string) =>
+      app.inject({ method: "POST", url: "/v1/device-events", headers: { authorization: A.device.auth }, payload: { event_id: id, sender: phone, token: tokenFromMessage(body.message_body), subscription_id: sub } });
+    expect((await send(1, "sim-none-other")).json().outcome).toBe("rejected_receiver_sim");
+    expect((await send(undefined, "sim-none-right")).json().outcome).toBe("verified");
+  });
+
   it("número já ativo em outra linha não pode ser ativado de novo", async () => {
     const res = await app.inject({ method: "POST", url: "/v1/devices/line", headers: { authorization: B.device.auth }, payload: { phone_number: A.receiver } });
     const ev = await sendEvent(B.device.auth, nextPhone(), tokenFromMessage(res.json().message_body));

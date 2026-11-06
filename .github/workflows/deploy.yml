@@ -1,0 +1,152 @@
+name: Build e deploy (GHCR -> VPS)
+
+# Regra do projeto: o build acontece sempre aqui no GitHub. A VPS só baixa as imagens prontas do GHCR.
+# O deploy sai de um runner do GitHub por SSH: nenhum runner permanente consumindo recursos da VPS.
+# Sem cancel-in-progress: interromper um deploy no meio (migrações, troca de containers) é mais arriscado
+# do que esperar; o GitHub mantém só o commit mais recente na fila.
+
+"on":
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "apps/android/**"
+      - "examples/**"
+      - "01_IDENTIDADE_VISUAL/**"
+      - "02_TELAS_REFERENCIA/**"
+      - "03_ASSETS_TRANSPARENTES/**"
+      - "04_DOCUMENTACAO/**"
+      - "99_HISTORICO_NAO_IMPLEMENTAR/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: simvio-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: fernandinhomartins40
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: simvio
+          POSTGRES_PASSWORD: simvio_dev_only
+          POSTGRES_DB: simvio_test
+        ports: ["15432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U simvio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm exec -w @simvio/api -- prisma generate
+      - run: npx turbo run typecheck
+      - run: npx turbo run test --filter=@simvio/api --filter=@simvio/contracts
+
+  build:
+    needs: tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: simvio-api
+            dockerfile: apps/api/Dockerfile
+          - name: simvio-web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.name }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.name }}:buildcache,mode=max
+          # Attestations só aumentariam o download da VPS a cada deploy.
+          provenance: false
+          sbom: false
+
+  deploy:
+    needs: build
+    # Fica desligado até a VPS estar pronta (chave SSH, porta e vhost): variável SIMVIO_DEPLOY_ENABLED=true.
+    if: vars.SIMVIO_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    env:
+      APP_DIR: /opt/simvio
+      TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Gerar .env
+        env:
+          SIMVIO_PORT: ${{ vars.SIMVIO_PORT }}
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          SIMVIO_TRUSTED_PROXIES: ${{ vars.SIMVIO_TRUSTED_PROXIES }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          SIMVIO_ENCRYPTION_KEYS: ${{ secrets.SIMVIO_ENCRYPTION_KEYS }}
+          SIMVIO_HMAC_KEY: ${{ secrets.SIMVIO_HMAC_KEY }}
+          SMTP_URL: ${{ secrets.SMTP_URL }}
+        run: |
+          umask 077
+          {
+            echo "COMPOSE_PROJECT_NAME=simvio"
+            echo "SIMVIO_BIND_ADDRESS=127.0.0.1"
+            for name in SIMVIO_PORT PUBLIC_BASE_URL SIMVIO_TRUSTED_PROXIES MAIL_FROM \
+                        POSTGRES_PASSWORD SIMVIO_ENCRYPTION_KEYS SIMVIO_HMAC_KEY SMTP_URL; do
+              printf '%s=%s\n' "$name" "${!name}"
+            done
+          } > simvio.env
+
+      - name: Enviar arquivos para a VPS
+        run: |
+          ssh "$TARGET" "mkdir -p $APP_DIR/deploy/nginx && chmod 700 $APP_DIR"
+          scp -q compose.yaml scripts/vps-deploy.sh "$TARGET:$APP_DIR/"
+          scp -q deploy/nginx/simvio.conf.template "$TARGET:$APP_DIR/deploy/nginx/"
+          scp -q simvio.env "$TARGET:$APP_DIR/.env"
+          rm -f simvio.env
+
+      - name: Implantar (somente pull, sem build)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | ssh "$TARGET" \
+            "RELEASE=$GITHUB_SHA IMAGE_PREFIX=$REGISTRY/$OWNER/simvio- GHCR_USER=$GITHUB_ACTOR bash $APP_DIR/vps-deploy.sh"
+
+      - name: Conferência pela URL pública
+        run: node scripts/smoke.mjs "${{ vars.PUBLIC_BASE_URL }}"

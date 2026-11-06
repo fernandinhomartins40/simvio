@@ -1,5 +1,14 @@
 # Implantação da Simvio numa VPS
 
+> **Produção atual (simvio.com.br, VPS 72.60.10.108):** o deploy acontece **somente** pelo GitHub Actions
+> (`.github/workflows/deploy.yml`): testes → build das imagens no GitHub → publicação no GHCR → a VPS só baixa
+> as imagens por SSH (`scripts/vps-deploy.sh`, em `/opt/simvio`). **Nunca compile na VPS.** Porta local: 8290.
+> Vhost do Nginx central: `deploy/nginx/simvio.com.br.conf`. Segredos e variáveis ficam no repositório do GitHub;
+> a cópia em `/opt/simvio/.env` é regravada a cada deploy. **Guarde `SIMVIO_ENCRYPTION_KEYS` e `SIMVIO_HMAC_KEY`
+> em local seguro**: sem elas, os dados cifrados não podem ser lidos. Voltar versão: Actions → rodar de novo o
+> workflow do commit desejado. Os passos abaixo com `--build` valem só para instalação local; nela, acrescente
+> `-f compose.build.yaml` aos comandos.
+
 Guia para instalar, atualizar, voltar versão e fazer backup da Simvio numa VPS Linux que **já hospeda
 outras aplicações**. Nada aqui foi executado em VPS: os passos foram escritos e os scripts testados
 localmente (ver `docs/STATUS.md`). Não altere a VPS sem autorização do responsável.
@@ -158,8 +167,8 @@ Para não deixar dados de teste, use uma organização própria para o smoke e s
 depois (ou rode antes de abrir para clientes).
 
 Observação: no Docker Compose 5.x do Windows, `docker compose up --build` pode pedir
-`--allow=fs.read=...` (bake do buildx). Contorno: `docker build -f apps/api/Dockerfile -t simvio/api:local .`,
-`docker build -f apps/web/Dockerfile -t simvio/web:local .` e depois `docker compose up -d --no-build`.
+`--allow=fs.read=...` (bake do buildx). Contorno: `docker build -f apps/api/Dockerfile -t ghcr.io/fernandinhomartins40/simvio-api:latest .`,
+`docker build -f apps/web/Dockerfile -t ghcr.io/fernandinhomartins40/simvio-web:latest .` e depois `docker compose up -d --no-build`.
 
 ## 2. Atualização
 
