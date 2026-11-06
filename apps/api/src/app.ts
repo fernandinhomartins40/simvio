@@ -9,6 +9,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { deviceRoutes } from "./routes/device.js";
 import { integrationRoutes } from "./routes/integration.js";
+import { mcpRoutes } from "./routes/mcp.js";
 import { invitationRoutes, panelRoutes } from "./routes/panel.js";
 
 export async function buildApp(opts: { logger?: boolean } = {}) {
@@ -76,6 +77,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   await app.register(panelRoutes);
   await app.register(invitationRoutes);
   await app.register(adminRoutes);
+  await app.register(mcpRoutes);
 
   return app;
 }

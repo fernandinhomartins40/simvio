@@ -1,9 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { prisma, type Tx } from "../db.js";
 
+/** Quem age em operações compartilhadas entre o painel e o MCP. */
+export interface Actor {
+  type: "user" | "agent_key";
+  id: string;
+}
+
 export interface AuditEntry {
   organizationId?: string | null;
-  actorType: "user" | "superadmin" | "device" | "system" | "api_key";
+  actorType: "user" | "superadmin" | "device" | "system" | "api_key" | "agent_key";
   actorId?: string | null;
   action: string;
   targetType?: string;

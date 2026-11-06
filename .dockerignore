@@ -22,3 +22,6 @@ deploy
 99_HISTORICO_NAO_IMPLEMENTAR
 *.md
 compose*.yaml
+# Base de consulta do MCP (routes/mcp.ts).
+!docs/openapi.yaml
+!docs/guia-agente.md

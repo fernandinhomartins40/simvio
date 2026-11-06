@@ -51,6 +51,7 @@ COPY --from=build --chown=node:node /app/packages/contracts/dist packages/contra
 COPY --from=build --chown=node:node /app/apps/api/package.json apps/api/
 COPY --from=build --chown=node:node /app/apps/api/prisma apps/api/prisma
 COPY --from=build --chown=node:node /app/apps/api/dist apps/api/dist
+COPY --chown=node:node docs/openapi.yaml docs/guia-agente.md docs/
 WORKDIR /app/apps/api
 USER node
 EXPOSE 3001

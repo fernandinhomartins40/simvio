@@ -1,4 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { z } from "zod";
+import { isStrongPassword } from "@simvio/contracts";
 import { config, isProduction } from "../config.js";
 import { forbidden, unauthorized } from "../lib/errors.js";
 import { assertCsrf, resolveSession, SESSION_COOKIE, type PanelSession } from "../modules/auth/service.js";
@@ -47,3 +49,8 @@ export const limit = (max: number, timeWindow = "1 minute") => ({
   // Limites só valem fora dos testes automatizados, que disparam muitas requisições do mesmo IP.
   rateLimit: config.NODE_ENV === "test" ? false : { max, timeWindow },
 });
+
+/** Senha nova (cadastro, recuperação, troca e convite). Login aceita qualquer senha existente. */
+export const newPassword = z
+  .string()
+  .refine(isStrongPassword, "A senha precisa ter ao menos 10 caracteres, letra minúscula, letra maiúscula, número e caractere especial.");

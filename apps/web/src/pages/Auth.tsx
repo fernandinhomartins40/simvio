@@ -5,7 +5,7 @@ import { BigTitle, Logo } from "@/components/brand";
 import { Loading } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/card";
-import { Field, FormError } from "@/components/ui/form";
+import { Field, FormError, NEW_PASSWORD_ERROR, NewPasswordFields, PasswordField, useNewPassword } from "@/components/ui/form";
 import { takeHashToken, useAction } from "@/lib/action";
 import { api, ApiError } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -16,7 +16,7 @@ const send = (path: string, body: unknown) => api<{ status: string }>(path, { me
 function AuthLayout({ title, text, children, footer }: { title: string; text?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-mineral lg:flex-row">
-      <aside className="hidden flex-1 flex-col justify-between bg-petroleo p-10 text-white lg:flex">
+      <aside className="hidden flex-1 flex-col gap-10 overflow-hidden bg-petroleo p-10 pb-0 text-white lg:flex">
         <Link to="/"><Logo negative className="h-14" /></Link>
         <div className="space-y-4">
           <p className="text-4xl font-extrabold leading-tight tracking-tight">
@@ -24,7 +24,7 @@ function AuthLayout({ title, text, children, footer }: { title: string; text?: s
           </p>
           <p className="max-w-md text-lg text-white/80">O usuário envia o SMS do próprio celular para o seu Android receptor. Mensalidade fixa, sem créditos por mensagem.</p>
         </div>
-        <img src="/brand/07-faixa-lima-hero.png" alt="" aria-hidden className="w-2/3 self-end object-contain" />
+        <img src="/brand/01-celular-emissor-com-mao.png" alt="" aria-hidden className="mt-auto max-h-[50dvh] w-auto self-end object-contain" />
       </aside>
       <main className="flex flex-1 flex-col justify-center px-5 py-10 sm:px-10">
         <div className="mx-auto w-full max-w-md space-y-6">
@@ -102,7 +102,7 @@ export function LoginPage() {
         }}
       >
         <Field label="E-mail" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Field label="Senha" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordField label="Senha" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         <FormError message={login.error} />
         {unverified && (
           <Notice tone="info" className="flex-col">
@@ -121,10 +121,12 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const [form, setForm] = useState({ name: "", email: "", password: "", organization_name: "" });
+  const [form, setForm] = useState({ name: "", email: "", organization_name: "" });
+  const pw = useNewPassword();
   const [done, setDone] = useState(false);
   const reg = useAction(async () => {
-    await send("/auth/register", form);
+    if (!pw.ok) throw new Error(NEW_PASSWORD_ERROR);
+    await send("/auth/register", { ...form, password: pw.value });
     setDone(true);
   });
   const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
@@ -155,17 +157,7 @@ export function RegisterPage() {
         <Field label="Seu nome" autoComplete="name" required minLength={2} maxLength={80} value={form.name} onChange={set("name")} />
         <Field label="E-mail de trabalho" type="email" autoComplete="email" required value={form.email} onChange={set("email")} />
         <Field label="Nome da empresa ou projeto" required minLength={2} maxLength={80} value={form.organization_name} onChange={set("organization_name")} />
-        <Field
-          label="Senha"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={10}
-          maxLength={128}
-          hint="Ao menos 10 caracteres. Uma frase longa é mais fácil de lembrar."
-          value={form.password}
-          onChange={set("password")}
-        />
+        <NewPasswordFields state={pw} />
         <FormError message={reg.error} />
         <Button type="submit" size="lg" className="w-full" disabled={reg.busy}>{reg.busy ? "Criando…" : "Criar conta"}</Button>
       </form>
@@ -211,10 +203,11 @@ function MissingToken() {
 
 export function ResetPasswordPage() {
   const [token] = useState(takeHashToken);
-  const [password, setPassword] = useState("");
+  const pw = useNewPassword();
   const [done, setDone] = useState(false);
   const act = useAction(async () => {
-    await send("/auth/reset-password", { token, password });
+    if (!pw.ok) throw new Error(NEW_PASSWORD_ERROR);
+    await send("/auth/reset-password", { token, password: pw.value });
     setDone(true);
   });
 
@@ -237,7 +230,7 @@ export function ResetPasswordPage() {
           act.run();
         }}
       >
-        <Field label="Nova senha" type="password" autoComplete="new-password" required minLength={10} maxLength={128} hint="Ao menos 10 caracteres." value={password} onChange={(e) => setPassword(e.target.value)} />
+        <NewPasswordFields state={pw} label="Nova senha" />
         <FormError message={act.error} />
         <Button type="submit" size="lg" className="w-full" disabled={act.busy}>Salvar nova senha</Button>
       </form>
@@ -282,7 +275,7 @@ export function InvitePage() {
   const navigate = useNavigate();
   const [token] = useState(takeHashToken);
   const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
+  const pw = useNewPassword();
   const [needLogin, setNeedLogin] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -329,11 +322,12 @@ export function InvitePage() {
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          accept.run({ name, password });
+          if (pw.ok) accept.run({ name, password: pw.value });
+          else accept.setError(NEW_PASSWORD_ERROR);
         }}
       >
         <Field label="Seu nome" autoComplete="name" required minLength={2} maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
-        <Field label="Senha" type="password" autoComplete="new-password" required minLength={10} maxLength={128} hint="Ao menos 10 caracteres." value={password} onChange={(e) => setPassword(e.target.value)} />
+        <NewPasswordFields state={pw} />
         <FormError message={accept.error} />
         {needLogin && <Notice tone="info"><p>Este e-mail já tem conta. Entre com ela e abra o link do convite novamente.</p></Notice>}
         <Button type="submit" size="lg" className="w-full" disabled={accept.busy}>Criar acesso e entrar na equipe</Button>

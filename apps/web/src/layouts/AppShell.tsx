@@ -1,6 +1,6 @@
 import { createContext, Suspense, useContext, useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router";
-import { Bell, ChevronDown, CreditCard, Home, LayoutGrid, ListChecks, LogOut, Menu, Settings, ShieldCheck, Smartphone, Users, X } from "lucide-react";
+import { Bell, Bot, ChevronDown, CreditCard, Home, LayoutGrid, ListChecks, LogOut, Menu, Settings, ShieldCheck, Smartphone, Users, X } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Loading } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ const NAV = [
   { to: "/app/aparelhos", label: "Aparelhos", icon: Smartphone },
   { to: "/app/verificacoes", label: "Verificações", icon: ListChecks },
   { to: "/app/avisos", label: "Avisos automáticos", icon: Bell },
+  { to: "/app/agentes", label: "Agentes de IA", icon: Bot },
   { to: "/app/equipe", label: "Equipe", icon: Users },
   { to: "/app/assinatura", label: "Assinatura", icon: CreditCard },
 ];

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isStrongPassword,
   base32Encode,
   buildChallengeMessage,
   maskPhone,
@@ -48,5 +49,17 @@ describe("desafio", () => {
     expect(parseChallengeMessage(`Olá SIMVIO ${token}`)).toBeNull();
     expect(parseChallengeMessage(`SIMVIO ${token.slice(1)}`)).toBeNull();
     expect(parseChallengeMessage(`SIMVIO ABCDEFGHIJKLMNOPQRSTUVWXY1`)).toBeNull();
+  });
+});
+
+describe("senha nova", () => {
+  it("exige tamanho, minúscula, maiúscula, número e caractere especial", () => {
+    expect(isStrongPassword("Senha-forte-123")).toBe(true);
+    expect(isStrongPassword("Curta-1")).toBe(false);
+    expect(isStrongPassword("senha-forte-123")).toBe(false);
+    expect(isStrongPassword("SENHA-FORTE-123")).toBe(false);
+    expect(isStrongPassword("Senha-forte-sem")).toBe(false);
+    expect(isStrongPassword("Senhaforte1234")).toBe(false);
+    expect(isStrongPassword("Aa1-" + "x".repeat(125))).toBe(false);
   });
 });

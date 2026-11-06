@@ -23,6 +23,7 @@ const Devices = lazy(() => import("./pages/app/Devices"));
 const Verifications = lazy(() => import("./pages/app/Verifications"));
 const Webhooks = lazy(() => import("./pages/app/Webhooks"));
 const Team = lazy(() => import("./pages/app/Team"));
+const Agents = lazy(() => import("./pages/app/Agents"));
 const Subscription = lazy(() => import("./pages/app/Subscription"));
 const Settings = lazy(() => import("./pages/app/Settings"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -73,6 +74,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="verificacoes" element={<Verifications />} />
               <Route path="avisos" element={<Webhooks />} />
               <Route path="equipe" element={<Team />} />
+              <Route path="agentes" element={<Agents />} />
               <Route path="assinatura" element={<Subscription />} />
               <Route path="configuracoes" element={<Settings />} />
             </Route>

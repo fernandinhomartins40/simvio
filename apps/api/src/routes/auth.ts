@@ -14,10 +14,10 @@ import {
   revokeSession,
   verifyEmail,
 } from "../modules/auth/service.js";
-import { assertOrigin, clearSessionCookie, limit, requireSession, setSessionCookie } from "./panelAuth.js";
+import { assertOrigin, clearSessionCookie, limit, newPassword, requireSession, setSessionCookie } from "./panelAuth.js";
 
 const email = z.email().max(254);
-const password = z.string().min(10, "Use ao menos 10 caracteres.").max(128);
+const password = newPassword;
 const token = z.string().min(20).max(100);
 
 const registerSchema = z.object({

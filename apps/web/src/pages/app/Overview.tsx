@@ -34,20 +34,51 @@ export default function OverviewPage() {
         <Notice tone="error"><XCircle className="size-5 shrink-0" aria-hidden /><p>A assinatura está suspensa. Novas verificações estão bloqueadas até a regularização. <Link to="/app/assinatura" className="font-semibold underline">Ver assinatura</Link></p></Notice>
       )}
 
-      <Card className={data.ready ? "border-lima bg-lima/20" : "border-amber-200 bg-amber-50"}>
-        <div className="flex flex-wrap items-center gap-4">
-          {data.ready ? <CheckCircle2 className="size-10 text-sucesso" aria-hidden /> : <ShieldCheck className="size-10 text-alerta" aria-hidden />}
-          <div className="flex-1 space-y-1">
-            <h2 className="text-2xl font-extrabold">Está pronto para verificar?</h2>
-            <p className="text-lg">
+      <section className="rounded-3xl bg-petroleo p-6 text-white sm:p-8">
+        <div className="flex flex-wrap items-center gap-5">
+          <span className={`flex size-16 shrink-0 items-center justify-center rounded-full ${data.ready ? "bg-lima text-petroleo" : "bg-white/10 text-lima"}`}>
+            {data.ready ? <CheckCircle2 className="size-9" aria-hidden /> : <ShieldCheck className="size-9" aria-hidden />}
+          </span>
+          <div className="min-w-60 flex-1 space-y-1">
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{data.ready ? "Pronto para verificar" : "Ainda não está pronto para verificar"}</h2>
+            <p className="text-lg text-white/85">
               {data.ready
-                ? "Sim. Há um aparelho comunicando com a linha confirmada e uma chave ativa."
-                : "Ainda não. Siga os passos abaixo para receber a primeira verificação."}
+                ? "Há um aparelho comunicando com a linha confirmada e uma chave ativa."
+                : "Siga os passos abaixo para receber a primeira verificação."}
             </p>
-            {data.ready && <p className="text-sm text-petroleo-soft">“Comunicando” indica contato recente do app, não garante a recepção de SMS. Faça um teste real quando trocar chip ou aparelho.</p>}
           </div>
+          <p className="text-white/85"><strong className="block text-4xl font-extrabold text-lima">{data.verified_total}</strong> verificações confirmadas</p>
         </div>
-      </Card>
+        {data.ready && <p className="mt-4 text-sm text-white/70">“Comunicando” indica contato recente do app, não garante a recepção de SMS. Faça um teste real quando trocar chip ou aparelho.</p>}
+      </section>
+
+      {done < STEPS.length && (
+        <Card className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">Primeiros passos</h2>
+            <p className="text-petroleo-soft">{done} de {STEPS.length} concluídos</p>
+            <div role="progressbar" aria-label="Progresso dos primeiros passos" aria-valuemin={0} aria-valuemax={STEPS.length} aria-valuenow={done} className="mt-3 h-2 overflow-hidden rounded-full bg-mineral">
+              <div className="h-full rounded-full bg-lima-600" style={{ width: `${(done / STEPS.length) * 100}%` }} />
+            </div>
+          </div>
+          <ol className="space-y-2">
+            {STEPS.map((s, i) => {
+              const ok = data.steps[s.key];
+              return (
+                <li key={s.key}>
+                  <Link to={s.to} className="flex items-start gap-3 rounded-xl p-3 hover:bg-mineral">
+                    {ok ? <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-sucesso" aria-hidden /> : <Circle className="mt-0.5 size-6 shrink-0 text-petroleo-soft" aria-hidden />}
+                    <span>
+                      <span className="block font-semibold">{i + 1}. {s.title} <span className="sr-only">{ok ? "(concluído)" : "(pendente)"}</span></span>
+                      <span className="block text-petroleo-soft">{s.text}</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="space-y-4">
@@ -97,34 +128,8 @@ export default function OverviewPage() {
               <p>{data.failed_webhooks_24h} aviso(s) automático(s) não foram entregues ao seu servidor. <Link to="/app/avisos" className="font-semibold underline">Ver entregas</Link></p>
             </Notice>
           )}
-          <p className="text-sm text-petroleo-soft">Verificações confirmadas até agora: <strong className="text-petroleo">{data.verified_total}</strong></p>
         </Card>
       </div>
-
-      {done < STEPS.length && (
-        <Card className="space-y-4">
-          <div>
-            <h2 className="text-xl font-bold">Primeiros passos</h2>
-            <p className="text-petroleo-soft">{done} de {STEPS.length} concluídos</p>
-          </div>
-          <ol className="space-y-2">
-            {STEPS.map((s, i) => {
-              const ok = data.steps[s.key];
-              return (
-                <li key={s.key}>
-                  <Link to={s.to} className="flex items-start gap-3 rounded-xl p-3 hover:bg-mineral">
-                    {ok ? <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-sucesso" aria-hidden /> : <Circle className="mt-0.5 size-6 shrink-0 text-petroleo-soft" aria-hidden />}
-                    <span>
-                      <span className="block font-semibold">{i + 1}. {s.title} <span className="sr-only">{ok ? "(concluído)" : "(pendente)"}</span></span>
-                      <span className="block text-petroleo-soft">{s.text}</span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
-        </Card>
-      )}
     </>
   );
 }

@@ -63,7 +63,7 @@ Preencha o `.env`:
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` (só letras e números). |
 | `SIMVIO_ENCRYPTION_KEYS` | `k1:` + `openssl rand -base64 32`. |
 | `SIMVIO_HMAC_KEY` | `openssl rand -base64 32`. **Não troque depois** sem migração. |
-| `SMTP_URL`, `MAIL_FROM` | Dados do provedor de e-mail. |
+| `VELOMAIL_API_KEY` (ou `SMTP_URL`), `MAIL_FROM` | Provedor de e-mail. Em produção: VeloMail, com o domínio simvio.com.br verificado. |
 | `WEBHOOK_ALLOW_PRIVATE_TARGETS` | Mantenha `false` (a API se recusa a subir com `true` em produção). |
 
 Guarde **fora da VPS** (cofre de senhas) uma cópia de `SIMVIO_ENCRYPTION_KEYS`, `SIMVIO_HMAC_KEY` e

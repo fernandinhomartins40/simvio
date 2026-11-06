@@ -138,6 +138,7 @@ model Organization {
   invitations    Invitation[]
   applications   Application[]
   apiKeys        ApiKey[]
+  agentKeys      AgentKey[]
   devices        Device[]
   receiverLines  ReceiverLine[]
   pairings       PairingSession[]
@@ -226,6 +227,26 @@ model ApiKey {
   application  Application  @relation(fields: [applicationId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
   @@index([organizationId, applicationId])
+}
+
+// Chave do agente de IA para o MCP. Presa a uma organização; guardada só como digest.
+model AgentKey {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  prefix         String
+  digest         String    @unique
+  // Sem esta permissão o agente só mexe no ambiente de teste.
+  allowLive      Boolean   @default(false)
+  createdById    String
+  expiresAt      DateTime?
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 // ---------------------------------------------------------------------------

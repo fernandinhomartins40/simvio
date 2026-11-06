@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { PageHeader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Card, Notice } from "@/components/ui/card";
-import { Field, FormError } from "@/components/ui/form";
+import { Field, FormError, NEW_PASSWORD_ERROR, NewPasswordFields, PasswordField, useNewPassword } from "@/components/ui/form";
 import { useOrg } from "@/layouts/AppShell";
 import { useAction } from "@/lib/action";
 import { dateTime } from "@/lib/format";
@@ -19,6 +19,8 @@ export const auditLabel: Record<string, string> = {
   "application.live_disabled": "Produção desabilitada",
   "api_key.created": "Chave criada",
   "api_key.revoked": "Chave revogada",
+  "agent_key.created": "Chave de agente de IA criada",
+  "agent_key.revoked": "Chave de agente de IA revogada",
   "webhook.created": "Endereço de aviso criado",
   "webhook.updated": "Endereço de aviso alterado",
   "webhook.deleted": "Endereço de aviso excluído",
@@ -46,13 +48,14 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
+  const pw = useNewPassword();
   const [changed, setChanged] = useState(false);
   const change = useAction(async () => {
     setChanged(false);
-    await post("/auth/change-password", { current_password: current, new_password: next });
+    if (!pw.ok) throw new Error(NEW_PASSWORD_ERROR);
+    await post("/auth/change-password", { current_password: current, new_password: pw.value });
     setCurrent("");
-    setNext("");
+    pw.clear();
     setChanged(true);
   });
 
@@ -79,8 +82,8 @@ export default function SettingsPage() {
         <Card className="space-y-4">
           <h2 className="text-xl font-bold">Trocar senha</h2>
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); change.run(); }}>
-            <Field label="Senha atual" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
-            <Field label="Nova senha" type="password" autoComplete="new-password" required minLength={10} maxLength={128} hint="Ao menos 10 caracteres." value={next} onChange={(e) => setNext(e.target.value)} />
+            <PasswordField label="Senha atual" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
+            <NewPasswordFields state={pw} label="Nova senha" />
             <FormError message={change.error} />
             {changed && <Notice tone="success"><p>Senha alterada. As outras sessões foram encerradas.</p></Notice>}
             <Button type="submit" disabled={change.busy}>Salvar nova senha</Button>

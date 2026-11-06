@@ -35,7 +35,7 @@ function normalizeCode(code: string) {
 // Pareamento
 
 /** Criado no painel por proprietário/desenvolvedor. O QR contém só a URL da API e o código. */
-export async function createPairing(organizationId: string, userId: string) {
+export async function createPairing(organizationId: string, userId: string, actorType: "user" | "agent_key" = "user") {
   const ent = await getEntitlements(organizationId);
   if (ent.status === "suspended") throw new ApiError("suspended", "A organização está suspensa. Não é possível conectar aparelhos.");
   const active = await prisma.device.count({ where: { organizationId, status: "active" } });
@@ -47,7 +47,7 @@ export async function createPairing(organizationId: string, userId: string) {
   const pairing = await prisma.pairingSession.create({
     data: { organizationId, createdById: userId, codeDigest: sha256(code), expiresAt },
   });
-  await audit({ organizationId, actorType: "user", actorId: userId, action: "device.pairing_created", targetType: "pairing", targetId: pairing.id });
+  await audit({ organizationId, actorType, actorId: userId, action: "device.pairing_created", targetType: "pairing", targetId: pairing.id });
   const apiBase = `${config.PUBLIC_BASE_URL}/api`;
   return {
     id: pairing.id,

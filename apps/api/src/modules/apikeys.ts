@@ -12,6 +12,7 @@ export async function createApiKey(
   environment: Environment,
   name: string,
   actorId: string | null,
+  actorType: "user" | "agent_key" = "user",
 ) {
   const app = await prisma.application.findFirst({ where: { id: applicationId, organizationId, archivedAt: null } });
   if (!app) throw notFound("Aplicação");
@@ -29,7 +30,7 @@ export async function createApiKey(
   });
   await audit({
     organizationId,
-    actorType: actorId ? "user" : "system",
+    actorType: actorId ? actorType : "system",
     actorId,
     action: "api_key.created",
     targetType: "api_key",
@@ -39,12 +40,12 @@ export async function createApiKey(
   return { key, secret };
 }
 
-export async function revokeApiKey(organizationId: string, keyId: string, actorId: string) {
+export async function revokeApiKey(organizationId: string, keyId: string, actorId: string, actorType: "user" | "agent_key" = "user") {
   const key = await prisma.apiKey.findFirst({ where: { id: keyId, organizationId } });
   if (!key) throw notFound("Chave");
   if (!key.revokedAt) {
     await prisma.apiKey.update({ where: { id: key.id }, data: { revokedAt: new Date() } });
-    await audit({ organizationId, actorType: "user", actorId, action: "api_key.revoked", targetType: "api_key", targetId: key.id, metadata: { prefix: key.prefix } });
+    await audit({ organizationId, actorType, actorId, action: "api_key.revoked", targetType: "api_key", targetId: key.id, metadata: { prefix: key.prefix } });
   }
 }
 

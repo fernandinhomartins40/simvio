@@ -27,6 +27,9 @@ const schema = z.object({
   // Confia em X-Forwarded-* apenas do proxy da própria stack (Nginx da Simvio).
   TRUST_PROXY: z.string().default("loopback,uniquelocal"),
   SMTP_URL: z.string().optional(),
+  // VeloMail (e-mail transacional em produção). Com a chave, tem prioridade sobre o SMTP.
+  VELOMAIL_API_KEY: z.string().optional(),
+  VELOMAIL_API_URL: z.url().default("https://www.velomail.com.br/api"),
   MAIL_FROM: z.string().default("Simvio <nao-responda@localhost>"),
   WORKER_POLL_MS: z.coerce.number().int().default(1000),
   LOG_LEVEL: z.string().default("info"),

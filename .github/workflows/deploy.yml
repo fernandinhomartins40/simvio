@@ -11,6 +11,8 @@ name: Build e deploy (GHCR -> VPS)
     paths-ignore:
       - "**.md"
       - "docs/**"
+      - "!docs/guia-agente.md"
+      - "!docs/openapi.yaml"
       - "apps/android/**"
       - "examples/**"
       - "01_IDENTIDADE_VISUAL/**"
@@ -122,13 +124,14 @@ jobs:
           SIMVIO_ENCRYPTION_KEYS: ${{ secrets.SIMVIO_ENCRYPTION_KEYS }}
           SIMVIO_HMAC_KEY: ${{ secrets.SIMVIO_HMAC_KEY }}
           SMTP_URL: ${{ secrets.SMTP_URL }}
+          VELOMAIL_API_KEY: ${{ secrets.VELOMAIL_API_KEY }}
         run: |
           umask 077
           {
             echo "COMPOSE_PROJECT_NAME=simvio"
             echo "SIMVIO_BIND_ADDRESS=127.0.0.1"
             for name in SIMVIO_PORT PUBLIC_BASE_URL SIMVIO_TRUSTED_PROXIES MAIL_FROM \
-                        POSTGRES_PASSWORD SIMVIO_ENCRYPTION_KEYS SIMVIO_HMAC_KEY SMTP_URL; do
+                        POSTGRES_PASSWORD SIMVIO_ENCRYPTION_KEYS SIMVIO_HMAC_KEY SMTP_URL VELOMAIL_API_KEY; do
               printf '%s=%s\n' "$name" "${!name}"
             done
           } > simvio.env

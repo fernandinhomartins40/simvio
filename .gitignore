@@ -18,3 +18,5 @@ apps/android/keystore.properties
 backups/
 # PHP example
 examples/laravel/vendor/
+
+*.tsbuildinfo

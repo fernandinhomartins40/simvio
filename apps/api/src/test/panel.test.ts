@@ -6,7 +6,7 @@ import { testOutbox } from "../lib/mail.js";
 import { resetDb } from "./helpers.js";
 
 let app: FastifyInstance;
-const PASSWORD = "senha-forte-123";
+const PASSWORD = "Senha-forte-123";
 
 beforeAll(async () => {
   app = await buildApp({ logger: false });
@@ -95,10 +95,11 @@ describe("contas", () => {
     expect(none.statusCode).toBe(200);
     const token = tokenFromMail(testOutbox.at(-1)!.text);
     const reset = (password: string) => app.inject({ method: "POST", url: "/v1/auth/reset-password", payload: { token, password } });
-    expect((await reset("nova-senha-forte")).statusCode).toBe(200);
-    expect((await reset("outra-senha-forte")).statusCode).toBe(400);
+    expect((await reset("senha-sem-maiuscula-1")).statusCode).toBe(400);
+    expect((await reset("Nova-senha-forte-1")).statusCode).toBe(200);
+    expect((await reset("Outra-senha-forte-2")).statusCode).toBe(400);
     expect((await c.req("GET", "/v1/auth/me")).statusCode).toBe(401);
-    await signIn("ana@a.test", "nova-senha-forte");
+    await signIn("ana@a.test", "Nova-senha-forte-1");
   });
 
   it("logout revoga a sessão no servidor", async () => {

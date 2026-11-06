@@ -5,6 +5,7 @@ import { audit } from "../../lib/audit.js";
 import { hashPassword, randomToken, safeEqual, sha256, verifyPassword } from "../../lib/crypto.js";
 import { ApiError, forbidden, invalid, unauthorized } from "../../lib/errors.js";
 import { mailConfigured, sendMail } from "../../lib/mail.js";
+import { accountExistsMail, confirmEmailMail, passwordChangedMail, resetPasswordMail } from "../../lib/mail-templates.js";
 
 export const SESSION_COOKIE = "simvio_session";
 const SESSION_TTL_MS = 14 * 24 * 3600 * 1000;
@@ -34,11 +35,7 @@ async function issueEmailToken(userId: string, purpose: EmailTokenPurpose) {
 
 async function sendVerification(user: Pick<User, "id" | "email" | "name">) {
   const token = await issueEmailToken(user.id, "verify_email");
-  await sendMail({
-    to: user.email,
-    subject: "Confirme seu e-mail na Simvio",
-    text: `Olá, ${user.name}.\n\nConfirme seu e-mail para acessar a Simvio:\n${publicLink("/confirmar-email", token)}\n\nO link vale por 48 horas. Se não foi você, ignore esta mensagem.`,
-  });
+  await sendMail(confirmEmailMail(user.email, user.name, publicLink("/confirmar-email", token)));
 }
 
 export interface RegisterInput {
@@ -56,11 +53,7 @@ export async function register(input: RegisterInput) {
   const email = normalizeEmail(input.email);
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    await sendMail({
-      to: email,
-      subject: "Você já tem uma conta na Simvio",
-      text: `Alguém tentou criar uma conta com este e-mail. Se foi você, entre ou recupere sua senha em ${config.PUBLIC_BASE_URL}/entrar.`,
-    });
+    await sendMail(accountExistsMail(email));
     return;
   }
   const autoVerify = !mailConfigured && config.NODE_ENV === "development";
@@ -155,23 +148,20 @@ export async function forgotPassword(emailRaw: string) {
   const user = await prisma.user.findUnique({ where: { email: normalizeEmail(emailRaw) } });
   if (!user) return;
   const token = await issueEmailToken(user.id, "reset_password");
-  await sendMail({
-    to: user.email,
-    subject: "Redefina sua senha da Simvio",
-    text: `Use este link para criar uma nova senha:\n${publicLink("/redefinir-senha", token)}\n\nO link vale por 1 hora. Se não foi você, ignore esta mensagem.`,
-  });
+  await sendMail(resetPasswordMail(user.email, publicLink("/redefinir-senha", token)));
 }
 
 export async function resetPassword(token: string, password: string) {
   const rec = await consumeEmailToken(token, "reset_password");
   if (!rec) throw invalid("Link inválido ou expirado. Peça um novo.");
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: rec.userId },
     // Quem acessou o link controla o e-mail: a conta fica confirmada.
     data: { passwordHash: await hashPassword(password), emailVerifiedAt: new Date() },
   });
   await revokeAllSessions(rec.userId);
   await audit({ actorType: "user", actorId: rec.userId, action: "user.password_reset" });
+  await sendMail(passwordChangedMail(user.email));
 }
 
 export async function changePassword(user: User, current: string, next: string, keepSessionId: string) {
@@ -182,4 +172,5 @@ export async function changePassword(user: User, current: string, next: string, 
     data: { revokedAt: new Date() },
   });
   await audit({ actorType: "user", actorId: user.id, action: "user.password_changed" });
+  await sendMail(passwordChangedMail(user.email));
 }

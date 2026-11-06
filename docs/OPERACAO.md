@@ -50,3 +50,10 @@ Logs dos containers giram sozinhos (10 MB × 5 por serviço).
      (`BACKUP_RETENTION_DAYS`, padrão 14 dias). Ao restaurar um backup antigo, repita a exclusão.
 - **Rotação da chave de criptografia:** acrescente a nova à frente em `SIMVIO_ENCRYPTION_KEYS`
   (`k2:<nova>,k1:<antiga>`) e reinicie `api` e `worker`. Mantenha a antiga até os dados antigos expirarem pela retenção.
+
+## Revogar a chave de um agente de IA (MCP)
+
+O agente de IA acessa a Simvio por `/api/mcp` com uma chave `smv_agent_`. Se a chave vazar ou o computador for perdido:
+**Agentes de IA → Revogar**, no painel da organização. A chave para de funcionar na próxima chamada. Toda ação do agente
+fica no registro de atividades com o autor `agent_key`. Chaves de API criadas pelo agente continuam válidas: revise
+em **Aplicações** e revogue as que não reconhecer.
