@@ -64,7 +64,7 @@ Preencha o `.env`:
 | `SIMVIO_ENCRYPTION_KEYS` | `k1:` + `openssl rand -base64 32`. |
 | `SIMVIO_HMAC_KEY` | `openssl rand -base64 32`. **Não troque depois** sem migração. |
 | `VELOMAIL_API_KEY` (ou `SMTP_URL`), `MAIL_FROM` | Provedor de e-mail. Em produção: VeloMail, com o domínio simvio.com.br verificado. |
-| `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Cobrança pelo Asaas. No `.env`, a chave vai entre aspas simples (`ASAAS_API_KEY='$aact_...'`): sem elas o Compose lê o `$` como variável. Sem a chave, a assinatura é só manual pela administração. |
+| `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Cobrança pelo Asaas. Segredos do GitHub; o workflow grava no `.env` entre aspas simples, porque a chave começa com `$`. Sem a chave, a assinatura é só manual pela administração. |
 | `WEBHOOK_ALLOW_PRIVATE_TARGETS` | Mantenha `false` (a API se recusa a subir com `true` em produção). |
 
 Guarde **fora da VPS** (cofre de senhas) uma cópia de `SIMVIO_ENCRYPTION_KEYS`, `SIMVIO_HMAC_KEY` e

@@ -125,6 +125,8 @@ jobs:
           SIMVIO_HMAC_KEY: ${{ secrets.SIMVIO_HMAC_KEY }}
           SMTP_URL: ${{ secrets.SMTP_URL }}
           VELOMAIL_API_KEY: ${{ secrets.VELOMAIL_API_KEY }}
+          ASAAS_API_KEY: ${{ secrets.ASAAS_API_KEY }}
+          ASAAS_WEBHOOK_TOKEN: ${{ secrets.ASAAS_WEBHOOK_TOKEN }}
         run: |
           umask 077
           {
@@ -133,6 +135,10 @@ jobs:
             for name in SIMVIO_PORT PUBLIC_BASE_URL SIMVIO_TRUSTED_PROXIES MAIL_FROM \
                         POSTGRES_PASSWORD SIMVIO_ENCRYPTION_KEYS SIMVIO_HMAC_KEY SMTP_URL VELOMAIL_API_KEY; do
               printf '%s=%s\n' "$name" "${!name}"
+            done
+            # Aspas simples: a chave do Asaas começa com "$" e o Compose a leria como variável.
+            for name in ASAAS_API_KEY ASAAS_WEBHOOK_TOKEN; do
+              printf "%s='%s'\n" "$name" "${!name}"
             done
           } > simvio.env
 

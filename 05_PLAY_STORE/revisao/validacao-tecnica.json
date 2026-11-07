@@ -1,0 +1,62 @@
+[
+  {
+    "arquivo": "01-icone-512x512.png",
+    "dimensoes": [
+      512,
+      512
+    ],
+    "modo": "RGBA",
+    "bytes": 213885,
+    "sRGB": true
+  },
+  {
+    "arquivo": "02-banner-1024x500.png",
+    "dimensoes": [
+      1024,
+      500
+    ],
+    "modo": "RGB",
+    "bytes": 473941,
+    "sRGB": true
+  },
+  {
+    "arquivo": "03-conectar-1080x1920.png",
+    "dimensoes": [
+      1080,
+      1920
+    ],
+    "modo": "RGB",
+    "bytes": 863670,
+    "sRGB": true
+  },
+  {
+    "arquivo": "04-inicio-1080x1920.png",
+    "dimensoes": [
+      1080,
+      1920
+    ],
+    "modo": "RGB",
+    "bytes": 945221,
+    "sRGB": true
+  },
+  {
+    "arquivo": "05-atividade-1080x1920.png",
+    "dimensoes": [
+      1080,
+      1920
+    ],
+    "modo": "RGB",
+    "bytes": 914317,
+    "sRGB": true
+  },
+  {
+    "arquivo": "06-ajustes-1080x1920.png",
+    "dimensoes": [
+      1080,
+      1920
+    ],
+    "modo": "RGB",
+    "bytes": 871744,
+    "sRGB": true
+  }
+]
