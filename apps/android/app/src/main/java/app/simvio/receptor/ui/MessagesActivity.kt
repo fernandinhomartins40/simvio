@@ -140,20 +140,30 @@ private fun rememberSmsVersion(): Int {
     return version
 }
 
+/**
+ * Divulgação exigida pela Play Store antes do pedido de app padrão: o que é lido, o que sai
+ * do aparelho e para quê. Usada no início do app e quando outro app abre a tela de mensagens.
+ */
 @Composable
-private fun ActivationScreen(refused: Boolean, onActivate: () -> Unit) {
+internal fun ActivationScreen(refused: Boolean, onActivate: () -> Unit) {
+    val ctx = LocalContext.current
     ScreenColumn {
         BigTitle("Use a Simvio como app de SMS")
-        Lead("Indicado para um aparelho dedicado às verificações. Todas as mensagens deste chip passam a ser recebidas e enviadas por aqui.")
+        Lead("Para receber as verificações, a Simvio precisa ser o app de SMS deste Android. Use um aparelho dedicado: todas as mensagens deste chip passam a ser recebidas e enviadas por aqui.")
         SimvioCard {
-            CheckRow("Suas mensagens ficam no aparelho", "Só as mensagens SIMVIO são encaminhadas à Simvio. As demais não saem do celular.", CheckState.OK)
+            CheckRow(
+                "O que sai do aparelho",
+                "Só das mensagens que começam com SIMVIO: o número de quem enviou, o código e o horário. Servem para confirmar o número do cliente de quem usa a Simvio.",
+                CheckState.OK,
+            )
+            CheckRow("As outras mensagens ficam aqui", "São lidas e guardadas só neste celular, como em qualquer app de SMS. A Simvio não as recebe.", CheckState.OK)
             CheckRow("Enviar só com o seu toque", "A Simvio nunca envia SMS sozinha deste chip.", CheckState.OK)
             CheckRow("MMS não é recebido", "Mensagens com foto ou áudio não chegam enquanto este for o app padrão.", CheckState.WARN)
-            CheckRow("Mensagens SIMVIO não ficam guardadas", "Com o aparelho conectado, elas não aparecem nas conversas: estão em Atividade.", CheckState.OK)
         }
         if (refused) ErrorText("O Android não definiu a Simvio como app padrão. Tente de novo ou confira em Ajustes do Android › Apps padrão.")
-        PrimaryButton("Definir como app de SMS padrão", onClick = onActivate)
-        Lead("Você pode voltar ao app anterior a qualquer momento em Ajustes do Android › Apps padrão.")
+        PrimaryButton("Concordo, definir como app de SMS padrão", onClick = onActivate)
+        SecondaryButton("Ler a política de privacidade", onClick = { openPrivacyPolicy(ctx) })
+        Lead("Você pode voltar ao app anterior a qualquer momento em Ajustes do Android › Apps padrão. Enquanto isso, este aparelho para de receber verificações.")
     }
 }
 

@@ -2,6 +2,7 @@ package app.simvio.receptor.ui
 
 import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -11,16 +12,23 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import app.simvio.receptor.sms.SmsBox
 import app.simvio.receptor.ui.theme.SimvioTheme
 
 class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
-    private var permanentlyDenied by mutableStateOf(false)
+    private var refused by mutableStateOf(false)
 
-    private val requestPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { smsGranted ->
-        permanentlyDenied = !smsGranted && !shouldShowRequestPermissionRationale(Manifest.permission.RECEIVE_SMS)
+    private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    // Política de SMS da Play Store: as permissões de SMS só vêm junto com o papel de app padrão.
+    private val askDefault = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vm.refreshLocal()
-        if (smsGranted) vm.sync()
+        refused = !vm.defaultSms
+        if (vm.defaultSms) {
+            if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            vm.sync()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +39,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     vm.revokedNotice -> RevokedScreen { vm.dismissRevoked() }
                     !vm.paired -> PairScreen(vm)
-                    !vm.diagnostics.smsPermission -> PermissionScreen(::askPermissions, permanentlyDenied)
+                    !vm.defaultSms -> ActivationScreen(refused) { askDefault.launch(SmsBox.requestDefaultIntent(this)) }
                     vm.justValidated || vm.line?.status != "active" -> LineScreen(vm)
                     else -> HomeScreen(vm, ::openBatterySettings)
                 }
@@ -51,10 +59,6 @@ class MainActivity : ComponentActivity() {
             vm.sync()
             if (vm.line?.status == "pending_check" || vm.lineCheck != null) vm.startPollingLine()
         }
-    }
-
-    private fun askPermissions() {
-        requestPermission.launch(Manifest.permission.RECEIVE_SMS)
     }
 
     /** Abre a lista de otimização de bateria do sistema; a decisão é do operador (não pedimos isenção direta). */

@@ -1,7 +1,8 @@
-name: APK do receptor Android
+name: APK e AAB do receptor Android
 
 # Roda em paralelo ao deploy, só quando o app muda. O APK assinado fica sempre no mesmo endereço
-# (release "receptor"), usado pelo link da página inicial. Nada disso toca a VPS.
+# (release "receptor"), usado pelo link da página inicial. O AAB da Play Store fica como artefato
+# da execução (não é público). Nada disso toca a VPS.
 
 "on":
   push:
@@ -32,7 +33,7 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Testar e gerar APK assinado
+      - name: Testar e gerar APK e AAB assinados
         env:
           SIMVIO_KEYSTORE_BASE64: ${{ secrets.SIMVIO_KEYSTORE_BASE64 }}
           SIMVIO_KEYSTORE_PASSWORD: ${{ secrets.SIMVIO_KEYSTORE_PASSWORD }}
@@ -42,10 +43,18 @@ jobs:
         run: |
           export SIMVIO_KEYSTORE_FILE="$RUNNER_TEMP/simvio-release.jks"
           printf '%s' "$SIMVIO_KEYSTORE_BASE64" | base64 -d > "$SIMVIO_KEYSTORE_FILE"
-          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          ./gradlew --no-daemon testDebugUnitTest assembleRelease bundleRelease
           tools=("$ANDROID_HOME"/build-tools/*)
           "${tools[-1]}/apksigner" verify app/build/outputs/apk/release/app-release.apk
           cp app/build/outputs/apk/release/app-release.apk simvio-receptor.apk
+          cp app/build/outputs/bundle/release/app-release.aab simvio-receptor-$SIMVIO_VERSION_CODE.aab
+
+      - name: Guardar o AAB para a Play Store
+        uses: actions/upload-artifact@v4
+        with:
+          name: simvio-receptor-aab
+          path: apps/android/simvio-receptor-*.aab
+          retention-days: 30
 
       - name: Publicar no endereço fixo
         env:

@@ -191,6 +191,7 @@ export default function Landing() {
           <a href="#como-funciona" className="hover:underline">Como funciona</a>
           <a href="#planos" className="hover:underline">Planos</a>
           <Link to="/documentacao" className="hover:underline">Documentação</Link>
+          <Link to="/privacidade" className="hover:underline">Privacidade</Link>
           <a href={APK_URL} className="hover:underline">Baixar app Android</a>
           <Link to="/entrar" className="hover:underline">Entrar</Link>
           <Link to="/admin/entrar" className="self-center text-sm text-petroleo-soft hover:underline">Administração</Link>

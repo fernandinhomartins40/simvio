@@ -1,15 +1,20 @@
 # Android receptor — permissões, segundo plano e distribuição
 
-Projeto: `apps/android` (Kotlin + Jetpack Compose, Gradle próprio). `applicationId` provisório
-`app.simvio.receptor` (debug: `app.simvio.receptor.debug`), minSdk 26, targetSdk 36.
+Projeto: `apps/android` (Kotlin + Jetpack Compose, Gradle próprio). `applicationId` definitivo
+`br.com.simvio.receptor` (debug: `br.com.simvio.receptor.debug`); o pacote do código continua
+`app.simvio.receptor`. minSdk 26, targetSdk 36.
 
 ## Compilar
 
 ```bash
 cd apps/android
 ./gradlew testDebugUnitTest assembleDebug     # APK de teste (assinado com chave debug local)
-./gradlew assembleRelease                      # APK de release (R8)
+./gradlew assembleRelease bundleRelease        # APK e AAB de release (R8)
 ```
+
+No GitHub, o workflow `android-apk.yml` gera os dois assinados: o APK vai para a release fixa
+`receptor` (link da página inicial) e o AAB da Play Store fica como artefato da execução por 30 dias.
+O `versionCode` é o número da execução do workflow.
 
 Saídas: `app/build/outputs/apk/debug/app-debug.apk` e `app/build/outputs/apk/release/`.
 
@@ -36,9 +41,14 @@ Guarde a chave com backup seguro: perder a chave impede atualizar o app instalad
 
 | Permissão | Motivo | Observação |
 |---|---|---|
-| `RECEIVE_SMS` | Receber novos SMS de verificação | Sem `READ_SMS`: não lê histórico. Mensagens fora do formato `SIMVIO <token>` são descartadas no próprio aparelho. |
+| `RECEIVE_SMS` | Encaminhar as mensagens `SIMVIO <token>` | As demais não saem do aparelho. |
+| `READ_SMS`, `SEND_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH` | Exigidas do app de SMS padrão | Conversas ficam no aparelho e não vão à API. |
+| `POST_NOTIFICATIONS` | Avisar mensagem nova | Pedida depois de virar app padrão. |
 | `INTERNET`, `ACCESS_NETWORK_STATE` | Encaminhar eventos e diagnosticar rede | — |
-| `READ_SMS`, `SEND_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH`, `POST_NOTIFICATIONS` | Modo opcional de app de SMS padrão | Só concedidas se o operador escolher esse modo. Conversas ficam no aparelho e não vão à API. |
+
+Nenhuma permissão de SMS é pedida avulsa: elas vêm com o papel de app de SMS padrão (`RoleManager`),
+como exige a política de SMS da Play Store. A tela de ativação é a divulgação exigida (o que sai do
+aparelho, o que fica, link para https://simvio.com.br/privacidade) antes do pedido.
 
 Não solicitamos câmera (o QR é lido pelo leitor do Google Play services, com alternativa de digitar
 o código), nem `READ_PHONE_STATE`/`READ_PHONE_NUMBERS`, nem isenção
@@ -50,14 +60,13 @@ sistema para o operador decidir.
 A linha grava o SIM que recebeu o teste; eventos de outro SIM (ou sem índice) falham com
 `rejected_receiver_sim`. Recomendação do piloto: um único chip ativo no aparelho receptor.
 
-## Modo app de SMS padrão (aparelho dedicado)
+## App de SMS padrão (aparelho dedicado)
 
-Opcional, em Ajustes › "Usar como app de SMS padrão". O app passa a receber (`SMS_DELIVER`), gravar na
+Obrigatório desde a versão 1.0.0: depois de conectar, o app só segue se for o app de SMS padrão. Ele passa a receber (`SMS_DELIVER`), gravar na
 caixa do sistema, notificar, listar conversas e enviar. O encaminhamento continua só no `SmsReceiver`.
 Mensagens `SIMVIO` não são gravadas em aparelho conectado. **MMS não é baixado.** Enviar sempre depende
-de toque do operador; links `sms:` só preenchem a tela. Este modo atende ao requisito da exceção de app
-padrão do Google Play, mas **não remove o bloqueio do Play Protect em APK instalado fora da loja**: esse
-bloqueio olha as permissões declaradas. Para clientes finais o caminho é a Play Store, com aprovação não garantida.
+de toque do operador; links `sms:` só preenchem a tela. O Play Protect continua alertando sobre o APK
+instalado fora da loja; para clientes finais o caminho é a Play Store.
 
 ## Segundo plano — como funciona e limites
 
@@ -78,7 +87,6 @@ bloqueio olha as permissões declaradas. Para clientes finais o caminho é a Pla
   falham, e o app apaga credencial, fila, atividade e a chave do Keystore ao receber o 401 de revogação.
   Se a revogação chegar em segundo plano, o app mostra "Aparelho desconectado" na próxima abertura.
 - Teste da linha com prazo vencido: o app para de esperar e oferece "Gerar novo teste".
-- Permissão de notificações removida: o app não publica notificações (PRD: só permissões necessárias).
 - Backup do Android desativado (`allowBackup=false` + regras de extração): a credencial não sai do aparelho.
 - Release só aceita HTTPS. O build debug aceita http para testes em rede local.
 
@@ -87,9 +95,9 @@ Comportamento por fabricante (Xiaomi/MIUI, Samsung, Huawei etc. podem matar apps
 
 ## Distribuição
 
-- **Google Play:** `RECEIVE_SMS` é permissão restrita; exige formulário de declaração e enquadramento
-  em exceção da política de SMS/Call Log. Aprovação **não é garantida** e não foi solicitada.
-  Não pedimos para ser app padrão de SMS para contornar a política.
+- **Google Play:** permissões de SMS são restritas. O app se enquadra como "app de SMS padrão" e exige o
+  formulário de declaração de permissões no Play Console. A aprovação depende da análise da Google e
+  **não é garantida**: o uso principal é receber verificações, e a função de mensagens é simples.
 - **Piloto:** APK privado assinado, instalado pelo contratante em aparelho dedicado (permitir "fontes
   desconhecidas" para o instalador usado). Riscos: atualização manual, alertas do Play Protect,
   dependência do contratante manter o app atualizado. Publicar hash SHA-256 do APK junto ao download.

@@ -3,13 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-      Permissões mínimas:
-      - RECEIVE_SMS: receber novos SMS (não lemos o histórico; sem READ_SMS).
-      - INTERNET / ACCESS_NETWORK_STATE: encaminhar o evento à API e diagnosticar a conexão.
+      Política de SMS da Play Store: o app só recebe as permissões de SMS sendo o app de SMS padrão
+      (o pedido é feito pelo RoleManager, nunca permissão avulsa).
+      - RECEIVE_SMS: encaminhar só as mensagens SIMVIO à API.
+      - READ_SMS, SEND_SMS, RECEIVE_MMS, RECEIVE_WAP_PUSH: exigidas do app padrão (caixa local de mensagens).
+      - POST_NOTIFICATIONS: aviso de mensagem nova.
+      - INTERNET / ACCESS_NETWORK_STATE: falar com a API e diagnosticar a conexão.
       Câmera NÃO é solicitada: o QR é lido pelo leitor do Google Play services.
-      Não pedimos isenção de bateria automática.
-      - READ_SMS, SEND_SMS, RECEIVE_MMS, RECEIVE_WAP_PUSH, POST_NOTIFICATIONS: só usadas se o operador
-        escolher a Simvio como app de SMS padrão (tela Mensagens). O conteúdo fica no aparelho.
     -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />

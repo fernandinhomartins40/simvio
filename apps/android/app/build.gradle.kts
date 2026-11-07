@@ -18,12 +18,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        // Identificador provisório: o domínio da marca ainda não foi confirmado (PRD §1).
-        applicationId = "app.simvio.receptor"
+        // Definitivo: a Play Store não permite trocar depois da primeira publicação.
+        applicationId = "br.com.simvio.receptor"
         minSdk = 26
         targetSdk = 36
         versionCode = System.getenv("SIMVIO_VERSION_CODE")?.toInt() ?: 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

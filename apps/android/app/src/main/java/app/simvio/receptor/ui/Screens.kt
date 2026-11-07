@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -132,31 +131,6 @@ fun PairScreen(vm: MainViewModel) {
             if (!host.isNullOrBlank()) Text("Você vai conectar a: $host", color = PetroleoSuave, style = MaterialTheme.typography.bodyMedium)
             ErrorText(vm.error)
             PrimaryButton("Conectar", onClick = { vm.pair() }, enabled = vm.pairCode.length >= 8, loading = vm.busy)
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------- Permissões
-
-@Composable
-fun PermissionScreen(onRequest: () -> Unit, permanentlyDenied: Boolean) {
-    val ctx = LocalContext.current
-    ScreenColumn {
-        BigTitle("Permita receber SMS")
-        Lead("Este Android precisa receber as mensagens que seus clientes enviam para confirmar o número.")
-        SimvioCard {
-            CheckRow("Só mensagens SIMVIO", "Mensagens que não começam com SIMVIO são ignoradas e não saem do aparelho.", CheckState.OK)
-            CheckRow("Sem ler o histórico", "Apenas novas mensagens são verificadas.", CheckState.OK)
-            CheckRow("Sem enviar SMS", "A Simvio não envia mensagens deste chip.", CheckState.OK)
-        }
-        if (permanentlyDenied) {
-            Lead("A permissão foi negada. Abra as configurações do app e ative \"SMS\".")
-            PrimaryButton("Abrir configurações", onClick = {
-                ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", ctx.packageName, null)))
-            })
-        } else {
-            PrimaryButton("Permitir", onClick = onRequest)
-            SecondaryButton("Usar como app de SMS padrão", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
         }
     }
 }
@@ -310,7 +284,7 @@ private fun StatusTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
         }
         SimvioCard {
             CheckRow("Internet", if (d.network == "none") "Sem conexão — os SMS ficam na fila" else "Conectado (${d.network})", if (d.network == "none") CheckState.ERROR else CheckState.OK)
-            CheckRow("Permissão de SMS", if (d.smsPermission) "Concedida" else "Negada — não é possível receber", if (d.smsPermission) CheckState.OK else CheckState.ERROR)
+            CheckRow("App de SMS padrão", if (vm.defaultSms) "Simvio" else "Outro app — não é possível receber", if (vm.defaultSms) CheckState.OK else CheckState.ERROR)
             CheckRow("Linha validada", if (vm.line?.status == "active") "Teste de recebimento concluído" else "Faça o teste de recebimento", if (vm.line?.status == "active") CheckState.OK else CheckState.ERROR)
             CheckRow("Fila de envio", if (d.pendingEvents == 0) "Nada pendente" else "${d.pendingEvents} mensagem(ns) aguardando envio", if (d.pendingEvents == 0) CheckState.OK else CheckState.WARN)
             CheckRow(
@@ -324,10 +298,8 @@ private fun StatusTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
             )
         }
         if (!d.batteryOptimizationIgnored || d.backgroundRestricted) SecondaryButton("Ver ajustes de bateria", onClick = onOpenBattery)
-        if (vm.defaultSms) {
-            val ctx = LocalContext.current
-            SecondaryButton("Abrir mensagens", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
-        }
+        val ctx = LocalContext.current
+        SecondaryButton("Abrir mensagens", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
         Text(
             "\"Comunicação recente\" mostra que o app falou com a Simvio. Para confirmar o recebimento de SMS, faça uma verificação de teste pelo painel.",
             color = PetroleoSuave, style = MaterialTheme.typography.bodyMedium,
@@ -337,6 +309,7 @@ private fun StatusTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
 
 @Composable
 private fun ActivityTab(vm: MainViewModel) {
+    val ctx = LocalContext.current
     ScreenColumn {
         BigTitle("Atividade")
         Lead("Mensagens de verificação recebidas neste aparelho. Outras mensagens não aparecem aqui.")
@@ -359,7 +332,7 @@ private fun ActivityTab(vm: MainViewModel) {
                         Text(title, style = MaterialTheme.typography.titleMedium, color = tint)
                         Text(a.detail, style = MaterialTheme.typography.bodyMedium, color = PetroleoSuave)
                     }
-                    Text(DateUtils.formatDateTime(null, a.atMillis, DateUtils.FORMAT_SHOW_TIME), color = PetroleoSuave, style = MaterialTheme.typography.bodyMedium)
+                    Text(DateUtils.formatDateTime(ctx, a.atMillis, DateUtils.FORMAT_SHOW_TIME), color = PetroleoSuave, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -380,10 +353,10 @@ private fun SettingsTab(vm: MainViewModel, onOpenBattery: () -> Unit) {
             Info("Versão do app", Diagnostics.appVersion)
             Info("Identificador", vm.deviceId?.takeLast(8) ?: "—")
         }
-        SecondaryButton(if (vm.defaultSms) "Abrir mensagens" else "Usar como app de SMS padrão", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
-        if (vm.defaultSms) SecondaryButton("Trocar o app de SMS padrão", onClick = { ctx.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) })
+        SecondaryButton("Abrir mensagens", onClick = { ctx.startActivity(Intent(ctx, MessagesActivity::class.java)) })
         SecondaryButton("Ajustes de bateria do Android", onClick = onOpenBattery)
         SecondaryButton("Trocar número/chip", onClick = { confirmChange = true })
+        SecondaryButton("Política de privacidade", onClick = { openPrivacyPolicy(ctx) })
         TextButton(onClick = { confirmUnpair = true }, modifier = Modifier.fillMaxWidth()) {
             Text("Desconectar este aparelho", color = Erro, style = MaterialTheme.typography.titleMedium)
         }

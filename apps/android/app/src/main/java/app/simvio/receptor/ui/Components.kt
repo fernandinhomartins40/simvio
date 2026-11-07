@@ -183,3 +183,9 @@ fun QrCode(content: String, description: String, modifier: Modifier = Modifier) 
     }
     Image(bitmap, contentDescription = description, modifier = modifier)
 }
+
+const val PRIVACY_URL = "https://simvio.com.br/privacidade"
+
+fun openPrivacyPolicy(ctx: android.content.Context) {
+    runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_URL))) }
+}

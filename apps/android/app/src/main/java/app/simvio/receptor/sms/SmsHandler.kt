@@ -69,7 +69,9 @@ class SmsDeliverReceiver : BroadcastReceiver() {
 
 /** Exigido para ser app padrão. shortcut: MMS não é baixado; implementar se o app sair do aparelho dedicado. */
 class MmsPushReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) = Unit
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION) return
+    }
 }
 
 class SmsSentReceiver : BroadcastReceiver() {

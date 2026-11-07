@@ -54,7 +54,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var defaultSms by mutableStateOf(SmsBox.isDefault(app)); private set
 
     // Pré-preenchidos pelo QR / link simvio://pair
-    var pairApi by mutableStateOf(store.apiBase ?: "https://")
+    var pairApi by mutableStateOf(store.apiBase ?: "https://simvio.com.br/api")
     var pairCode by mutableStateOf("")
 
     private var polling: Job? = null
@@ -186,5 +186,5 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun isHealthy(d: DiagnosticsSnapshot = diagnostics) =
-        paired && line?.status == "active" && d.smsPermission && d.network != "none" && d.pendingEvents == 0
+        paired && line?.status == "active" && defaultSms && d.smsPermission && d.network != "none" && d.pendingEvents == 0
 }

@@ -9,6 +9,7 @@ import { SessionProvider } from "@/lib/session";
 const VerifyPage = lazy(() => import("./pages/VerifyPage"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Docs = lazy(() => import("./pages/Docs"));
+const Privacy = lazy(() => import("./pages/Privacy"));
 const AppShell = lazy(() => import("./layouts/AppShell"));
 const auth = () => import("./pages/Auth");
 const LoginPage = lazy(() => auth().then((m) => ({ default: m.LoginPage })));
@@ -63,6 +64,7 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/v/:token" element={<VerifyPage />} />
           <Route path="/documentacao" element={<Docs />} />
+          <Route path="/privacidade" element={<Privacy />} />
           <Route element={<WithSession />}>
             <Route path="/" element={<Landing />} />
             <Route path="/precos" element={<Navigate to="/#planos" replace />} />
