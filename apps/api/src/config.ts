@@ -31,6 +31,10 @@ const schema = z.object({
   VELOMAIL_API_KEY: z.string().optional(),
   VELOMAIL_API_URL: z.url().default("https://www.velomail.com.br/api"),
   MAIL_FROM: z.string().default("Simvio <nao-responda@localhost>"),
+  // Asaas (cobrança). Sem a chave, a assinatura continua manual pelo painel de administração.
+  ASAAS_API_KEY: z.string().optional(),
+  ASAAS_API_URL: z.url().default("https://api.asaas.com/v3"),
+  ASAAS_WEBHOOK_TOKEN: z.string().optional(),
   WORKER_POLL_MS: z.coerce.number().int().default(1000),
   LOG_LEVEL: z.string().default("info"),
 });

@@ -10,6 +10,7 @@ import { generateTotpSecret, matchTotp, otpauthUri } from "../lib/totp.js";
 import { createSession, forgotPassword, login, normalizeEmail, resendVerification, revokeAllSessions } from "../modules/auth/service.js";
 import { deviceHealth, onlineSince } from "../modules/devices/health.js";
 import { revokeDevice } from "../modules/devices/service.js";
+import { cancelBilling } from "../modules/billing.js";
 import { getEntitlements } from "../modules/plans.js";
 import { assertOrigin, limit, requireSession, setSessionCookie } from "./panelAuth.js";
 
@@ -258,6 +259,14 @@ export async function adminRoutes(app: FastifyInstance) {
             updated_at: org.subscription.updatedAt.toISOString(),
           }
         : null,
+      billing: {
+        asaas_customer_id: org.asaasCustomerId,
+        asaas_subscription_id: org.asaasSubscriptionId,
+        plan_code: org.billingPlanCode,
+        invoice_url: org.billingInvoiceUrl,
+        overdue_since: org.billingOverdueSince?.toISOString() ?? null,
+        ends_at: org.billingEndsAt?.toISOString() ?? null,
+      },
       stats: { verified_30d: verified30d, failed_webhooks_30d: failedWebhooks },
       members: org.memberships.map((m) => ({ id: m.user.id, name: m.user.name, email: m.user.email, role: m.role, email_verified: !!m.user.emailVerifiedAt })),
       webhooks: org.webhooks.map((w) => ({ id: w.id, url: redactUrl(w.url), environment: w.environment, enabled: w.enabled, application: w.application.name })),
@@ -302,6 +311,8 @@ export async function adminRoutes(app: FastifyInstance) {
     const org = await prisma.organization.findUnique({ where: { id }, include: { memberships: { include: { user: { include: { _count: { select: { memberships: true } } } } } } } });
     if (!org) throw notFound("Organização");
     if (body.confirm_name.trim() !== org.name) throw invalid("O nome digitado não confere.");
+    // Cancela no Asaas antes de apagar: sem isso o cliente continuaria sendo cobrado.
+    if (org.asaasSubscriptionId) await cancelBilling(id);
     const orphans = org.memberships.filter((m) => m.user._count.memberships === 1 && !m.user.isSuperAdmin).map((m) => m.userId);
     await prisma.$transaction([prisma.organization.delete({ where: { id } }), prisma.user.deleteMany({ where: { id: { in: orphans } } })]);
     // Sem organizationId: o registro sobrevive à exclusão.

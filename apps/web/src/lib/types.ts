@@ -137,6 +137,15 @@ export interface Subscription {
   limits: { live_applications: number; devices: number };
   usage: { live_applications: number; devices: number };
   plans: { code: string; name: string; price_cents: number; live_applications: number; devices: number }[];
+  billing: {
+    enabled: boolean;
+    active: boolean;
+    plan_code: string | null;
+    invoice_url: string | null;
+    overdue_since: string | null;
+    blocks_at: string | null;
+    ends_at: string | null;
+  };
 }
 
 export interface AuditRow {

@@ -131,6 +131,13 @@ model Organization {
   // Suspensão administrativa (abuso, fraude, pedido do cliente); independente da cobrança.
   suspendedAt     DateTime?
   suspendedReason String?
+  // Cobrança pelo Asaas. O estado vem sempre de uma consulta ao Asaas, nunca do corpo do webhook.
+  asaasCustomerId     String?
+  asaasSubscriptionId String?   @unique
+  billingPlanCode     String?
+  billingInvoiceUrl   String?
+  billingOverdueSince DateTime?
+  billingEndsAt       DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

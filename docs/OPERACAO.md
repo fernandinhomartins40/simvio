@@ -52,6 +52,22 @@ Logs dos containers giram sozinhos (10 MB × 5 por serviço).
 - **Rotação da chave de criptografia:** acrescente a nova à frente em `SIMVIO_ENCRYPTION_KEYS`
   (`k2:<nova>,k1:<antiga>`) e reinicie `api` e `worker`. Mantenha a antiga até os dados antigos expirarem pela retenção.
 
+## Cobrança (Asaas)
+
+- O dono da organização assina em **Assinatura**: informa CPF/CNPJ e vai para a fatura do Asaas (Pix, boleto ou cartão).
+  O plano só vale depois do pagamento confirmado.
+- O Asaas avisa em `https://simvio.com.br/api/v1/billing/asaas/webhook` com o cabeçalho `asaas-access-token`
+  (`ASAAS_WEBHOOK_TOKEN`). O aviso só dispara uma consulta ao Asaas; o conteúdo dele não é usado.
+- A conta Asaas é a mesma do Fuse Aprova e do MercadoFlow. Clientes e assinaturas da Simvio têm
+  `externalReference` `simvio:org:<id>`; avisos de outras assinaturas são ignorados.
+- Atraso: aviso no painel do cliente; depois de 7 dias a produção é bloqueada. Volta sozinha ao pagar
+  (ou pelo botão "Já paguei, atualizar").
+- Troca de plano: limites na hora, novo valor a partir da próxima fatura. Cancelamento: sem novas cobranças,
+  plano vale até o fim do período pago. Excluir o cliente na administração cancela a assinatura no Asaas antes.
+- Plano de cortesia continua possível pela administração (Alterar plano), sem passar pelo Asaas.
+- Se o webhook aparecer como interrompido no Asaas (Integrações → Webhooks), veja `docker compose logs api`
+  e reative a fila lá depois de corrigir.
+
 ## Revogar a chave de um agente de IA (MCP)
 
 O agente de IA acessa a Simvio por `/api/mcp` com uma chave `smv_agent_`. Se a chave vazar ou o computador for perdido:

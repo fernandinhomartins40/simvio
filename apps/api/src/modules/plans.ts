@@ -1,4 +1,5 @@
 import { prisma, type Tx } from "../db.js";
+import { OVERDUE_GRACE_MS } from "./billing.js";
 
 /** Planos de referência do PRD §3 (sujeitos a validação comercial). */
 export const DEFAULT_PLANS = [
@@ -9,7 +10,7 @@ export const DEFAULT_PLANS = [
 
 /**
  * Sem assinatura ativa a organização fica em sandbox: pode testar (ambiente de teste e um
- * aparelho), mas não habilita produção. Assinaturas são geridas manualmente no piloto.
+ * aparelho), mas não habilita produção. A assinatura vem do Asaas ou é definida à mão pela administração.
  */
 export const SANDBOX_ENTITLEMENTS = { maxLiveApplications: 0, maxDevices: 1 };
 
@@ -24,15 +25,19 @@ export interface Entitlements {
 export async function getEntitlements(organizationId: string, tx: Tx = prisma): Promise<Entitlements> {
   const [sub, org] = await Promise.all([
     tx.subscription.findUnique({ where: { organizationId }, include: { plan: true } }),
-    tx.organization.findUnique({ where: { id: organizationId }, select: { suspendedAt: true } }),
+    tx.organization.findUnique({ where: { id: organizationId }, select: { suspendedAt: true, billingOverdueSince: true, billingEndsAt: true } }),
   ]);
-  // Suspensão administrativa prevalece sobre o estado da cobrança.
-  const suspended = !!org?.suspendedAt;
-  if (!sub || sub.status === "cancelled") {
+  const now = Date.now();
+  // Suspensão administrativa e atraso além da tolerância bloqueiam do mesmo jeito.
+  const overdue = !!org?.billingOverdueSince && now - org.billingOverdueSince.getTime() > OVERDUE_GRACE_MS;
+  const suspended = !!org?.suspendedAt || overdue;
+  const ended = !!org?.billingEndsAt && org.billingEndsAt.getTime() <= now;
+  if (!sub || sub.status === "cancelled" || ended) {
     return {
       planCode: null,
       planName: "Sandbox",
-      status: suspended ? "suspended" : sub ? "cancelled" : "sandbox",
+      // Fatura atrasada sem plano pago não tira o modo de teste.
+      status: org?.suspendedAt ? "suspended" : sub ? "cancelled" : "sandbox",
       ...SANDBOX_ENTITLEMENTS,
     };
   }

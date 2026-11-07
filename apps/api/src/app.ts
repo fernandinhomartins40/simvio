@@ -6,6 +6,7 @@ import { prisma } from "./db.js";
 import { ApiError } from "./lib/errors.js";
 import { redactUrl } from "./lib/http.js";
 import { adminRoutes } from "./routes/admin.js";
+import { billingRoutes } from "./routes/billing.js";
 import { authRoutes } from "./routes/auth.js";
 import { deviceRoutes } from "./routes/device.js";
 import { integrationRoutes } from "./routes/integration.js";
@@ -78,6 +79,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   await app.register(invitationRoutes);
   await app.register(adminRoutes);
   await app.register(mcpRoutes);
+  await app.register(billingRoutes);
 
   return app;
 }

@@ -12,6 +12,8 @@ import type { AuditRow } from "@/lib/types";
 
 export const auditLabel: Record<string, string> = {
   "organization.updated": "Organização atualizada",
+  "billing.checkout": "Plano assinado ou alterado",
+  "billing.cancelled": "Assinatura cancelada",
   "application.created": "Aplicação criada",
   "application.updated": "Aplicação alterada",
   "application.archived": "Aplicação arquivada",

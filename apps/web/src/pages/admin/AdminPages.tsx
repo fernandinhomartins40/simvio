@@ -33,6 +33,7 @@ interface OrgDetail {
   suspended_reason: string | null;
   entitlements: { plan_name: string; status: SubscriptionStatus; max_live_applications: number; max_devices: number };
   subscription: { plan_code: string; status: "active" | "suspended" | "cancelled"; current_period_end: string | null; notes: string | null; updated_at: string } | null;
+  billing: { asaas_customer_id: string | null; asaas_subscription_id: string | null; plan_code: string | null; invoice_url: string | null; overdue_since: string | null; ends_at: string | null };
   stats: { verified_30d: number; failed_webhooks_30d: number };
   members: { id: string; name: string; email: string; role: keyof typeof roleLabel; email_verified: boolean }[];
   webhooks: { id: string; url: string; environment: string; enabled: boolean; application: string }[];
@@ -205,6 +206,15 @@ export function AdminOrganization() {
           ) : (
             <p className="text-petroleo-soft">Sem assinatura: pode testar, mas não usar produção.</p>
           )}
+          {o.billing.asaas_subscription_id ? (
+            <p className="text-[15px]">
+              Cobrado pelo Asaas (assinatura <code>{o.billing.asaas_subscription_id}</code>)
+              {o.billing.overdue_since && <> · <strong className="text-erro">em atraso desde {new Date(o.billing.overdue_since).toLocaleDateString("pt-BR")}</strong></>}
+              {o.billing.invoice_url && <> · <a className="font-semibold underline" href={o.billing.invoice_url} target="_blank" rel="noreferrer">fatura aberta</a></>}
+            </p>
+          ) : o.billing.ends_at ? (
+            <p className="text-[15px]">Cancelou a cobrança pelo Asaas; o plano vale até {new Date(o.billing.ends_at).toLocaleDateString("pt-BR")}.</p>
+          ) : null}
           <Button variant="outline" onClick={() => setEditing(true)}>Alterar plano</Button>
         </Card>
         <Card className="space-y-3">

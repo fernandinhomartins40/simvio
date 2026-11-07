@@ -17,6 +17,7 @@ import { createAgentKey, revokeAgentKey, serializeAgentKey } from "../modules/ag
 import { createApiKey, revokeApiKey } from "../modules/apikeys.js";
 import { deviceHealth, smsPermissionDenied } from "../modules/devices/health.js";
 import { createPairing, revokeDevice } from "../modules/devices/service.js";
+import { billingEnabled, cancelBilling, checkout, OVERDUE_GRACE_MS, syncBilling } from "../modules/billing.js";
 import { getEntitlements } from "../modules/plans.js";
 import { createVerification, serializeVerification } from "../modules/verifications/service.js";
 import { redeliver } from "../modules/webhooks/delivery.js";
@@ -603,11 +604,12 @@ export async function panelRoutes(app: FastifyInstance) {
 
   app.get("/v1/orgs/:orgId/subscription", async (req) => {
     const { orgId } = await orgContext(req);
-    const [ent, liveApps, devices, plans] = await Promise.all([
+    const [ent, liveApps, devices, plans, org] = await Promise.all([
       getEntitlements(orgId),
       prisma.application.count({ where: { organizationId: orgId, liveEnabled: true, archivedAt: null } }),
       prisma.device.count({ where: { organizationId: orgId, status: "active" } }),
       prisma.plan.findMany({ where: { active: true }, orderBy: { priceCents: "asc" } }),
+      prisma.organization.findUniqueOrThrow({ where: { id: orgId } }),
     ]);
     return {
       plan_code: ent.planCode,
@@ -616,7 +618,47 @@ export async function panelRoutes(app: FastifyInstance) {
       limits: { live_applications: ent.maxLiveApplications, devices: ent.maxDevices },
       usage: { live_applications: liveApps, devices },
       plans: plans.map((p) => ({ code: p.code, name: p.name, price_cents: p.priceCents, live_applications: p.maxLiveApplications, devices: p.maxDevices })),
+      billing: {
+        enabled: billingEnabled(),
+        active: !!org.asaasSubscriptionId,
+        plan_code: org.billingPlanCode,
+        invoice_url: org.billingInvoiceUrl,
+        overdue_since: org.billingOverdueSince?.toISOString() ?? null,
+        blocks_at: org.billingOverdueSince ? new Date(org.billingOverdueSince.getTime() + OVERDUE_GRACE_MS).toISOString() : null,
+        ends_at: org.billingEndsAt?.toISOString() ?? null,
+      },
     };
+  });
+
+  app.post("/v1/orgs/:orgId/billing/checkout", { config: limit(10) }, async (req) => {
+    const { orgId, user } = await orgContext(req, "owner");
+    const body = parse(
+      z.object({
+        plan_code: z.string().min(1).max(40),
+        // Opcionais na troca de plano: o cliente já existe no Asaas.
+        cpf_cnpj: z.string().transform((v) => v.replace(/\D/g, "")).refine((v) => v.length === 11 || v.length === 14, "Informe um CPF ou CNPJ.").optional(),
+        name: z.string().trim().min(2).max(120).optional(),
+        email: z.email().max(200).optional(),
+      }),
+      req.body,
+    );
+    const result = await checkout(orgId, body);
+    await audit({ organizationId: orgId, actorType: "user", actorId: user.id, action: "billing.checkout", targetType: "organization", targetId: orgId, metadata: { plan: result.plan_code } });
+    return result;
+  });
+
+  app.post("/v1/orgs/:orgId/billing/cancel", { config: limit(5) }, async (req) => {
+    const { orgId, user } = await orgContext(req, "owner");
+    const result = await cancelBilling(orgId);
+    await audit({ organizationId: orgId, actorType: "user", actorId: user.id, action: "billing.cancelled", targetType: "organization", targetId: orgId, metadata: result });
+    return result;
+  });
+
+  /** "Já paguei": consulta o Asaas na hora, sem esperar o webhook. */
+  app.post("/v1/orgs/:orgId/billing/sync", { config: limit(10) }, async (req) => {
+    const { orgId } = await orgContext(req);
+    await syncBilling(orgId);
+    return { status: "ok" };
   });
 
   app.get("/v1/orgs/:orgId/audit-logs", async (req) => {

@@ -19,6 +19,9 @@ export default defineConfig({
       SIMVIO_HMAC_KEY: Buffer.alloc(32, 2).toString("base64"),
       WEBHOOK_ALLOW_PRIVATE_TARGETS: "true",
       LOG_LEVEL: "silent",
+      ASAAS_API_KEY: "chave-de-teste",
+      ASAAS_API_URL: "https://asaas.test/v3",
+      ASAAS_WEBHOOK_TOKEN: "segredo-do-webhook",
     },
   },
 });
