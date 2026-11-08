@@ -141,7 +141,7 @@ export default function Privacy() {
             <li>o acesso aos dados de uma organização é restrito aos membros dela;</li>
             <li>registro de ações do painel: 90 dias;</li>
             <li>
-              dados da conta: enquanto ela existir. Ao pedir a exclusão, a organização e seus dados são apagados; cópias de
+              dados da conta: enquanto ela existir. Ao pedir a exclusão (veja <Link className="font-semibold underline" to="/excluir-conta">como excluir a conta</Link>), a organização e seus dados são apagados; cópias de
               segurança expiram em até 14 dias. Dados exigidos por lei (como os de cobrança) ficam pelo prazo legal;
             </li>
             <li>
