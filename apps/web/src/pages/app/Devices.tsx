@@ -40,7 +40,7 @@ export default function DevicesPage() {
         <EmptyState
           icon={Smartphone}
           title="Nenhum aparelho conectado"
-          text="Use um Android com chip ativo e o app Simvio Receptor. A conexão é feita lendo um QR do painel."
+          text="Use um Android com chip ativo e o app Simvio. A conexão é feita lendo um QR do painel."
           action={canEdit && <Button onClick={() => setPairing(true)}><Plus aria-hidden /> Conectar aparelho</Button>}
         />
       )}
@@ -135,7 +135,7 @@ function PairDrawer({ onClose, onPaired }: { onClose: () => void; onPaired: () =
       ) : (
         <>
           <ol className="list-decimal space-y-2 pl-5 text-[15px]">
-            <li>Instale o app <strong>Simvio Receptor</strong> no Android.</li>
+            <li>Instale o app <strong>Simvio</strong> no Android.</li>
             <li>Abra o app e toque em <strong>Ler QR do painel</strong>.</li>
             <li>Aponte a câmera para o código abaixo. Se preferir, digite o código manual.</li>
           </ol>

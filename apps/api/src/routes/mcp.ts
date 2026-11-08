@@ -140,7 +140,7 @@ function buildServer(agent: Agent) {
     await redeliverWebhook(orgId, delivery_id, actor);
   });
 
-  tool("gerar_codigo_de_pareamento", "Gera o código que conecta um Android com o app Simvio Receptor. Vale por poucos minutos e uma única vez.", {}, () => createPairing(orgId, agent.id, "agent_key"));
+  tool("gerar_codigo_de_pareamento", "Gera o código que conecta um Android com o app Simvio. Vale por poucos minutos e uma única vez.", {}, () => createPairing(orgId, agent.id, "agent_key"));
 
   tool("listar_aparelhos", "Lista os aparelhos receptores, a situação de cada um e o diagnóstico.", {}, () => listDevices(orgId));
 

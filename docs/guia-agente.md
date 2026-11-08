@@ -7,7 +7,7 @@ A Simvio verifica celulares por SMS reverso: o usuário envia um SMS do próprio
 1. `ver_situacao` mostra o que já está pronto.
 2. `criar_aplicacao` cria a aplicação (use `listar_aplicacoes` antes, para não duplicar).
 3. `criar_chave_api` com ambiente `test` gera a chave do servidor. Grave em variável de ambiente, nunca no código nem no navegador.
-4. `gerar_codigo_de_pareamento` gera o código para o app Simvio Receptor. A pessoa digita o código no Android e confirma o número do chip no app.
+4. `gerar_codigo_de_pareamento` gera o código para o app Simvio. A pessoa digita o código no Android e confirma o número do chip no app.
 5. `criar_aviso_automatico` cadastra o endereço HTTPS que recebe os avisos. Grave o segredo de assinatura em variável de ambiente.
 6. `definir_urls_de_retorno` libera os endereços de volta ao site, se a integração usar `redirect_url`.
 7. `criar_verificacao_de_teste` cria uma sessão de teste. O dono do número envia o SMS; `consultar_verificacoes` mostra o resultado.

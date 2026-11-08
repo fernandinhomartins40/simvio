@@ -17,7 +17,7 @@ export const PLANS = [
 ];
 
 const FAQ = [
-  ["Meus usuários precisam instalar alguma coisa?", "Não. O usuário envia um SMS pelo aplicativo de mensagens que já tem no celular. Quem instala o app Simvio Receptor é você, no Android que fica com o seu chip."],
+  ["Meus usuários precisam instalar alguma coisa?", "Não. O usuário envia um SMS pelo aplicativo de mensagens que já tem no celular. Quem instala o app Simvio é você, no Android que fica com o seu chip."],
   ["Preciso comprar créditos por mensagem?", "Não. A Simvio cobra uma mensalidade fixa por plano. Não há créditos, tarifa por verificação nem excedente automático. O SMS enviado pelo usuário pode ser cobrado pela operadora dele."],
   ["Posso usar qualquer Android?", "O app funciona a partir do Android 8. Cada fabricante controla o funcionamento em segundo plano de um jeito; o painel mostra o diagnóstico do aparelho e recomendamos testar com SMS real antes de entrar em produção."],
   ["A Simvio envia código por SMS?", "Não. Quem envia é o usuário, do próprio número. Isso comprova que ele tem o chip em mãos, sem você pagar por mensagens enviadas."],
@@ -97,7 +97,7 @@ export default function Landing() {
             <ol className="grid gap-8 md:grid-cols-3">
               {[
                 ["Configure", "Crie a aplicação no painel e integre seu servidor à API da Simvio."],
-                ["Conecte", "Instale o app Simvio Receptor em um Android com o seu chip."],
+                ["Conecte", "Instale o app Simvio em um Android com o seu chip."],
                 ["Verifique", "O usuário envia o SMS do próprio número. A Simvio confere remetente, prazo e mensagem e avisa seu servidor."],
               ].map(([t, d], i) => (
                 <li key={t} className="flex gap-4 md:border-l md:border-white/15 md:pl-6">

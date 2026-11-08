@@ -4,7 +4,7 @@ import { BigTitle, Logo } from "@/components/brand";
 import { Card } from "@/components/ui/card";
 
 const CONTACT = "fuseagencia10@gmail.com";
-const UPDATED = "7 de novembro de 2026";
+const UPDATED = "8 de novembro de 2026";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -15,7 +15,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-/** Política de privacidade (site, painel e app Simvio Receptor). Mantenha alinhada ao que o código realmente guarda. */
+/** Política de privacidade (site, painel e app Simvio). Mantenha alinhada ao que o código realmente guarda. */
 export default function Privacy() {
   return (
     <div className="min-h-dvh bg-mineral">
@@ -28,7 +28,7 @@ export default function Privacy() {
           <p className="text-petroleo-soft">Atualizada em {UPDATED}.</p>
           <p className="text-lg">
             A Simvio confirma números de celular por SMS. Esta política explica quais dados tratamos no site, no painel e no app
-            Android <strong>Simvio Receptor</strong>, para que servem, com quem são compartilhados e por quanto tempo ficam guardados.
+            Android <strong>Simvio</strong>, para que servem, com quem são compartilhados e por quanto tempo ficam guardados.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export default function Privacy() {
           <p>O envio do SMS é feito pela própria pessoa e pode ser cobrado pela operadora dela.</p>
         </Section>
 
-        <Section title="3. App Android Simvio Receptor">
+        <Section title="3. App Android Simvio">
           <p>
             O app é instalado pelo cliente num celular dedicado, com um chip que recebe os SMS de verificação. Para funcionar, ele precisa
             ser o app de SMS padrão do aparelho.

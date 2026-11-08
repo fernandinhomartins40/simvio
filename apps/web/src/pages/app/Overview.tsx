@@ -11,7 +11,7 @@ import type { Overview } from "@/lib/types";
 const STEPS: { key: keyof Overview["steps"]; title: string; text: string; to: string }[] = [
   { key: "application", title: "Crie uma aplicação", text: "Representa o site ou app que vai verificar números.", to: "/app/aplicacoes" },
   { key: "api_key", title: "Gere uma chave secreta", text: "Ela fica só no servidor da sua aplicação.", to: "/app/aplicacoes" },
-  { key: "device", title: "Conecte um Android", text: "Instale o app Simvio Receptor e leia o QR do painel.", to: "/app/aparelhos" },
+  { key: "device", title: "Conecte um Android", text: "Instale o app Simvio e leia o QR do painel.", to: "/app/aparelhos" },
   { key: "line", title: "Confirme o número do chip", text: "O próprio aparelho confirma a linha com um SMS de teste enviado por você.", to: "/app/aparelhos" },
   { key: "first_verification", title: "Faça a primeira verificação real", text: "Use o teste da aplicação e envie o SMS do seu celular.", to: "/app/aplicacoes" },
 ];
